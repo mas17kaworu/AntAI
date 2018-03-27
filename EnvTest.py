@@ -7,14 +7,17 @@ class AntEnv:
         rows = 20
         self.stepNum = 0
         self.DONE = True
-        self.state = [0 for col in range(cols*rows)]
+        self.state = [0 for i in range(cols*rows)]
 
     def reset(self):
         self.DONE = False
         return self.state
 
     def step(self, action):
+        reward = 0
+        if action == 0:
+            reward = 10
         self.stepNum += 1
-        if stepNum > 100:
+        if self.stepNum > 100:
             self.DONE = true
-        return self.state, 10, self.DONE, 'xxx'
+        return self.state, reward, self.DONE, 'xxx'

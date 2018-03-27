@@ -17,7 +17,7 @@ GLOBAL_RUNNING_R = []
 GLOBAL_EP = 0
 
 env = EnvTest.AntEnv()
-N_S = env.observation_space_shape		# unknow
+N_S = env.observation_space_shape
 N_A = env.action_space_num
 
 
@@ -30,7 +30,7 @@ class ACNet(object):
         else:
             with tf.variable_scope(scope):
                 self.s = tf.placeholder(tf.float32, [None, N_S], 'S')
-                self.a_his = tf.placeholder(tf.int32, [None, ], 'A')
+                self.a_his = tf.placeholder(tf.int32, [None, ], 'A')  # Action history
                 self.v_target = tf.placeholder(tf.float32, [None, 1], 'Vtarget')
 
                 self.a_prob, self.v, self.a_params, self.c_params = self._build_net(scope)
