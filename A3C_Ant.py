@@ -3,6 +3,7 @@ import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
 import threading
+import EnvTest
 
 GLOBAL_NET_SCOPE = 'global_net'
 UPDATE_GLOBAL_ITER = 10
@@ -15,8 +16,9 @@ MAX_GLOBAL_EP = 1000
 GLOBAL_RUNNING_R = []
 GLOBAL_EP = 0
 
-N_S = env.observation_space.shape[0]		# unknow
-N_A = env.action_space.n  # 5
+env = EnvTest.AntEnv()
+N_S = env.observation_space_shape		# unknow
+N_A = env.action_space_num
 
 
 class ACNet(object):
@@ -73,26 +75,27 @@ class ACNet(object):
         return a_prob, v, a_params, c_params
 
     def choose_action(self, s):  # run by a local
-        prob_weights = self.sess.run(self.a_prob, feed_dict={self.s: s[np.newaxis, :]})
+        prob_weights = SESS.run(self.a_prob, feed_dict={self.s: s[np.newaxis, :]})
         action = np.random.choice(range(prob_weights.shape[1]),
                                   p=prob_weights.ravel())  # select action w.r.t the actions prob
         return action
 
     def update_global(self, feed_dict):  # run by a local
-        self.sess.run([self.update_a_op, self.update_c_op], feed_dict)  # local grads applies to global net
+        SESS.run([self.update_a_op, self.update_c_op], feed_dict)  # local grads applies to global net
 
     def pull_global(self):  # run by a local
-        self.sess.run([self.pull_a_params_op, self.pull_c_params_op])
+        SESS.run([self.pull_a_params_op, self.pull_c_params_op])
 
 
 class Worker(object):
-    def __init__(self, name, globalAC):
-        self.env = Ant.make.unwrapped  # need Shawn
+    def __init__(self, name, globalAC, index):
+        self.task_index = index
+        self.env = EnvTest.AntEnv()
         self.name = name
         self.AC = ACNet(name, globalAC)
 
     def work(self):
-        print('Start Worker: ', task_index)
+        print('Start Worker: ', self.task_index)
 
         global GLOBAL_RUNNING_R, GLOBAL_EP
         total_step = 1
@@ -100,7 +103,7 @@ class Worker(object):
         while not(COORD.should_stop()) and (GLOBAL_EP < MAX_GLOBAL_EP):
             s = self.env.reset()
             ep_r = 0
-            while True: # 靠env 自己done
+            while True:  # 靠env 自己done
                 # if task_index:
                 #     env.render()
                 a = self.AC.choose_action(s)
@@ -160,9 +163,9 @@ if __name__ == "__main__":
         global_net = ACNet(GLOBAL_NET_SCOPE)
         workers = []
         #Create Worker
-        for i in range(N_WORKERS):
+        for i in range(2):
             i_name = 'W_%i' % i
-            workers.append(Worker(i_name, global_net))
+            workers.append(Worker(i_name, global_net, i))
 
     COORD = tf.train.Coordinator()
     SESS.run(tf.global_variables_initializer())
@@ -174,12 +177,3 @@ if __name__ == "__main__":
         t.start()
         worker_threads.append(t)
     COORD.join(worker_threads) #每个worker 都结束了再进行下面的操作
-
-
-
-
-
-
-
-
-
