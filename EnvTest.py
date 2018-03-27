@@ -7,7 +7,7 @@ class AntEnv:
         rows = 20
         self.stepNum = 0
         self.DONE = True
-        self.state = [[0 for col in range(cols)] for row in range(rows)]
+        self.state = [0 for col in range(cols*rows)]
 
     def reset(self):
         self.DONE = False
