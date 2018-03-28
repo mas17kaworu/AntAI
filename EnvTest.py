@@ -1,3 +1,5 @@
+import numpy as np
+
 
 class AntEnv:
     def __init__(self):
@@ -8,10 +10,11 @@ class AntEnv:
         self.stepNum = 0
         self.DONE = True
         self.state = [0 for i in range(cols*rows)]
+        self.s1 = np.array(self.state)
 
     def reset(self):
         self.DONE = False
-        return self.state
+        return self.s1
 
     def step(self, action):
         reward = 0
@@ -19,5 +22,5 @@ class AntEnv:
             reward = 10
         self.stepNum += 1
         if self.stepNum > 100:
-            self.DONE = true
-        return self.state, reward, self.DONE, 'xxx'
+            self.DONE = True
+        return self.s1, reward, self.DONE, 'xxx'
