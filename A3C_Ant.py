@@ -15,8 +15,9 @@ LR_C = 0.001    # learning rate for critic
 MAX_GLOBAL_EP = 1000
 GLOBAL_RUNNING_R = []
 GLOBAL_EP = 0
+THREAD_NUM = 4
 
-env = EnvTest.AntEnv()
+env = EnvTest.AntEnv("-1")
 N_S = env.observation_space_shape
 N_A = env.action_space_num
 
@@ -90,7 +91,7 @@ class ACNet(object):
 class Worker(object):
     def __init__(self, name, globalAC, index):
         self.task_index = index
-        self.env = EnvTest.AntEnv()
+        self.env = EnvTest.AntEnv(name)
         self.name = name
         self.AC = ACNet(name, globalAC)
 
@@ -163,7 +164,7 @@ if __name__ == "__main__":
         global_net = ACNet(GLOBAL_NET_SCOPE)
         workers = []
         #Create Worker
-        for i in range(2):
+        for i in range(THREAD_NUM):
             i_name = 'W_%i' % i
             workers.append(Worker(i_name, global_net, i))
 
