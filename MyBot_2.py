@@ -3,7 +3,7 @@ from ants import *
 import sys
 import socket
 
-port = 8039
+port = 8040
 
 
 # define a class with a do_turn method
@@ -50,7 +50,7 @@ class MyBot:
         self.test_num += 1
         instr = b'from client 333'
         if self.test_num <= 10:
-            self.client.send(b'do_turn_1')
+            self.client.send(b'do_turn_2')
         if self.test_num >= 10:
             self.client.close()
 
