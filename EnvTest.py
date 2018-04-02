@@ -7,7 +7,8 @@ from queue import Queue
 import threading
 
 Start_play_command = 'D:\Python27\python tools/playgame.py "python %s" "python tools/sample_bots/python/HunterBot.py"  ' \
-                     '--map_file "tools/maps/example/tutorial1.map" --log_dir %s --turns 60 --scenario  --player_seed 7 --nolaunch  -e'
+                     '--map_file "tools/maps/example/tutorial1.map" --log_dir %s --turns 60 --scenario  ' \
+                     '--player_seed 7 --nolaunch  -e'
 
 #--verbose
 

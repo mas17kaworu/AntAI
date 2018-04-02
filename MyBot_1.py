@@ -4,7 +4,7 @@ import sys
 import socket
 
 port = 8039
-message_=b'bot1'
+botMark = b'bot1'
 
 
 # define a class with a do_turn method
@@ -43,12 +43,13 @@ class MyBot:
         # the ant_loc is an ant location tuple in (row, col) form
         self.test_num += 1
         if self.test_num <= 10:
-            self.client.send(b'do_turn_1')
+            self.client.send(b'do_turn_', botMark)
         if self.test_num >= 10:
             self.client.close()
+
         for ant_loc in ants.my_ants():
             # generate state for each ant
-            self.client.send(b'state')
+            self.client.send(ant_loc, b'state')
             # waite to receive action
             action = self.client.recv(1024)
             action = 's'  # only for test
