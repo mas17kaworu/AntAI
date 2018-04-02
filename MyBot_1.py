@@ -4,6 +4,7 @@ import sys
 import socket
 
 port = 8039
+message_=b'bot1'
 
 
 # define a class with a do_turn method
@@ -30,16 +31,9 @@ class MyBot:
         # sys.stdout.flush()
         ###############################################
         self.client.connect(("127.0.0.1", port))
-        instr = b'from client'
+        instr = b'setup client'
         self.client.send(instr)
         print(self.client.recv(1024))
-
-        self.hills = []
-        # initialize data structures after learning the game settings
-        self.unseen = []
-        for row in range(ants.rows):
-            for col in range(ants.cols):
-                self.unseen.append((row, col))
 
     # do turn is run once per turn
     # the ants class has the game state and is updated by the Ants.run method
@@ -48,84 +42,26 @@ class MyBot:
         # loop through all my ants and try to give them orders
         # the ant_loc is an ant location tuple in (row, col) form
         self.test_num += 1
-        instr = b'from client 333'
         if self.test_num <= 10:
             self.client.send(b'do_turn_1')
         if self.test_num >= 10:
             self.client.close()
-
-        # track all moves, prevent collisions
-        orders = {}
-
-        def do_move_direction(loc, direction):
-            new_loc = ants.destination(loc, direction)
-            if (ants.unoccupied(new_loc) and new_loc not in orders):
-                ants.issue_order((loc, direction))
-                orders[new_loc] = loc
-                return True
-            else:
-                return False
-
-        targets = {}
-
-        def do_move_location(loc, dest):
-            directions = ants.direction(loc, dest)
-            for direction in directions:
-                if do_move_direction(loc, direction):
-                    targets[dest] = loc
-                    return True
-            return False
-
-        # prevent stepping on own hill
-        for hill_loc in ants.my_hills():
-            orders[hill_loc] = None
-
-            # find close food
-        ant_dist = []
-        for food_loc in ants.food():
-            for ant_loc in ants.my_ants():
-                dist = ants.distance(ant_loc, food_loc)
-                ant_dist.append((dist, ant_loc, food_loc))
-        ant_dist.sort()
-        for dist, ant_loc, food_loc in ant_dist:
-            if food_loc not in targets and ant_loc not in targets.values():
-                do_move_location(ant_loc, food_loc)
-
-        # attack hills
-        for hill_loc, hill_owner in ants.enemy_hills():
-            if hill_loc not in self.hills:
-                self.hills.append(hill_loc)
-        ant_dist = []
-        for hill_loc in self.hills:
-            for ant_loc in ants.my_ants():
-                if ant_loc not in orders.values():
-                    dist = ants.distance(ant_loc, hill_loc)
-                    ant_dist.append((dist, ant_loc, hill_loc))
-        ant_dist.sort()
-        for dist, ant_loc, hill_loc in ant_dist:
-            do_move_location(ant_loc, hill_loc)
-
-        # explore unseen areas
-        for loc in self.unseen[:]:
-            if ants.visible(loc):
-                self.unseen.remove(loc)
         for ant_loc in ants.my_ants():
-            if ant_loc not in orders.values():
-                unseen_dist = []
-                for unseen_loc in self.unseen:
-                    dist = ants.distance(ant_loc, unseen_loc)
-                    unseen_dist.append((dist, unseen_loc))
-                unseen_dist.sort()
-                for dist, unseen_loc in unseen_dist:
-                    if do_move_location(ant_loc, unseen_loc):
-                        break
+            # generate state for each ant
+            self.client.send(b'state')
+            # waite to receive action
+            action = self.client.recv(1024)
+            action = 's'  # only for test
+            new_loc = ants.destination(ant_loc, action)
+            if ants.passable(new_loc):
+                # an order is the location of a current ant and a direction
+                ants.issue_order((ant_loc, action))
 
-                # unblock own hill
-                for hill_loc in ants.my_hills():
-                    if hill_loc in ants.my_ants() and hill_loc not in orders.values():
-                        for direction in ('s', 'e', 'w', 'n'):
-                            if do_move_direction(hill_loc, direction):
-                                break
+            # check if we still have time left to calculate more orders
+            if ants.time_remaining() < 10:
+                break
+
+
 
 
 if __name__ == '__main__':

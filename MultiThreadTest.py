@@ -11,7 +11,12 @@ class Worker(object):
 
     def work(self):
         print('Start Worker: ', self.task_index)
-        self.env.reset()
+        state = self.env.reset()
+        print("worker", self.task_index, state)
+
+
+
+
 
 
 if __name__ == "__main__":

@@ -20,7 +20,7 @@ class MyBot:
     # after the bot has received the game settings
     # the ants class is created and setup by the Ants.run method
     def do_setup(self, ants):
-        print("In mybot1 setup")
+        print("In mybot2 setup")
         ###############################################
         # data = sys.stdin.readline()
         # sys.stdout.write(b"Hm.\n")
@@ -48,7 +48,6 @@ class MyBot:
         # loop through all my ants and try to give them orders
         # the ant_loc is an ant location tuple in (row, col) form
         self.test_num += 1
-        instr = b'from client 333'
         if self.test_num <= 10:
             self.client.send(b'do_turn_2')
         if self.test_num >= 10:
