@@ -31,7 +31,7 @@ class MyBot:
         ###############################################
         self.client.connect(("127.0.0.1", port))
         instr = b'from client'
-        self.client.send(instr)
+        self.client.sendall(instr)
         print(self.client.recv(1024))
 
         self.hills = []
@@ -49,7 +49,7 @@ class MyBot:
         # the ant_loc is an ant location tuple in (row, col) form
         self.test_num += 1
         if self.test_num <= 10:
-            self.client.send(b'do_turn_2')
+            self.client.sendall(b'do_turn_2')
         if self.test_num >= 10:
             self.client.close()
 

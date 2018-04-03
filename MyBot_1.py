@@ -2,10 +2,13 @@
 from ants import *
 import sys
 import socket
+import pickle
+import json
+
 
 port = 8039
-botMark = b'bot1'
-
+botMark = 'bot1'
+PREFIX_S = b'state:'
 
 # define a class with a do_turn method
 # the Ants.run method will parse and update bot input
@@ -31,9 +34,9 @@ class MyBot:
         # sys.stdout.flush()
         ###############################################
         self.client.connect(("127.0.0.1", port))
-        instr = b'setup client'
-        self.client.send(instr)
-        print(self.client.recv(1024))
+        instr = 'setup client'
+        # self.client.sendall(instr.encode('utf-8'))
+        # print(self.client.recv(1024))
 
     # do turn is run once per turn
     # the ants class has the game state and is updated by the Ants.run method
@@ -41,18 +44,16 @@ class MyBot:
     def do_turn(self, ants):
         # loop through all my ants and try to give them orders
         # the ant_loc is an ant location tuple in (row, col) form
-        self.test_num += 1
-        if self.test_num <= 10:
-            self.client.send(b'do_turn_', botMark)
-        if self.test_num >= 10:
-            self.client.close()
 
+        # generate state for entire map
+        num = len(ants.my_ants())
+        ant_state = [num, 0, 1, 2, 3]  # only for test
+        self.client.sendall(pickle.dumps(ant_state))
+
+        # waite to receive action
         for ant_loc in ants.my_ants():
-            # generate state for each ant
-            self.client.send(ant_loc, b'state')
-            # waite to receive action
             action = self.client.recv(1024)
-            action = 's'  # only for test
+            action = 'e'  # only for test
             new_loc = ants.destination(ant_loc, action)
             if ants.passable(new_loc):
                 # an order is the location of a current ant and a direction

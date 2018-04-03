@@ -1,42 +1,21 @@
 import numpy as np
 import subprocess
 import multiprocessing
+import pickle
 import os
 import socket
 from queue import Queue
 import threading
 
-Start_play_command = 'D:\Python27\python tools/playgame.py "python %s" "python tools/sample_bots/python/HunterBot.py"  ' \
+Start_play_command = 'C:\Python27\python tools/playgame.py "python %s" "python tools/sample_bots/python/HunterBot.py"  ' \
                      '--map_file "tools/maps/example/tutorial1.map" --log_dir %s --turns 60 --scenario  ' \
-                     '--player_seed 7 --nolaunch  -e'
+                     '--player_seed 7   -e'
+# --verbose   --nolaunch
 
-#--verbose
-
-
+PREFIX_S = b'state:'
 PORT1 = 8039
 PORT2 = 8040
 PORT3 = 8038
-
-
-def start_server(portNum, queue):
-    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-    server.bind(("127.0.0.1", portNum))
-    server.listen(1)
-    # command = 'python socketCommTest.py'
-    # os.system(command)
-    try:
-        connection, address = server.accept()
-        while True:
-            received = connection.recv(1024)
-            if received != None:
-                print('got:', received)
-                queue.put(received)
-                connection.send(b"test: %s" % received)
-    except Exception as err:
-        print(err)
-    finally:
-        connection.close()
 
 
 class AntEnv:
@@ -52,6 +31,7 @@ class AntEnv:
         self.s1 = np.array(self.state)
 
         self.queue = Queue()
+        self.connection = None
 
     def reset(self):
         command = ''
@@ -59,15 +39,13 @@ class AntEnv:
 
         if self.Env_name == 'W_0':
             command = Start_play_command % ('MyBot_1.py', ('ant_log_' + self.Env_name))
-            t = threading.Thread(target=start_server, args=(PORT1, self.queue))
+            t = threading.Thread(target=self.start_server, args=(PORT1, self.queue))
             t.start()
-            # threading._start_new_thread(start_server, (PORT1,))
             print(command)
         elif self.Env_name == 'W_1':
             command = Start_play_command % ('MyBot_2.py', ('ant_log_' + self.Env_name))
-            t = threading.Thread(target=start_server, args=(PORT2, self.queue))
+            t = threading.Thread(target=self.start_server, args=(PORT2, self.queue))
             t.start()
-            # threading._start_new_thread(start_server, (PORT2,))
             print(command)
 ###########################################################################################
         # command = 'python stdCommTest.py'
@@ -81,21 +59,44 @@ class AntEnv:
         # print('got', p.stdout.readline().strip())
 #############################################################################################
         os.popen(command)
-        return self.queue.get()
+        return self.queue.get(timeout=2000)
 
-    def step(self, action):
+    def step(self):
         reward = 0
         # if action == 0:
         #     reward = 10
         # self.stepNum += 1
         # if self.stepNum > 100:
         #     self.DONE = True
-
         # send action to ant
+        return self.queue.get(timeout=1000), reward, self.DONE
 
+    def start_server(self, portNum, queue):
+        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-        return self.s1, reward, self.DONE, 'xxx'
+        server.bind(("127.0.0.1", portNum))
+        server.listen(1)
+        # command = 'python socketCommTest.py'
+        # os.system(command)
+        try:
+            self.connection, address = server.accept()
+            while True:
+                received = self.connection.recv(1024)
+                if received != None:
+                    data_arr = pickle.loads(received)
+                    print('got:', data_arr, ' Ants num = ', data_arr[0], 'first element', data_arr[1])
+                    queue.put(data_arr)
+                    # output = "test: %s" % received
+                    # connection.sendall(output.encode('utf-8'))
+        except Exception as err:
+            self.DONE = True
+            print('lk', err)
+        finally:
+            self.connection.close()
 
-    def one_ant_action(self, action):
-
-        pass
+    def step_for_ant(self, action):
+        try:
+            self.connection.sendall(action)
+        except Exception as err:
+            print(err)
+        return False

@@ -3,8 +3,8 @@ import EnvTest
 import threading
 
 
-def choose_action():
-    return 's'
+def choose_action(state):
+    return b'w'
 
 
 class Worker(object):
@@ -14,29 +14,38 @@ class Worker(object):
         self.env = EnvTest.AntEnv(name)
 
     def work(self):
+        def get_ant_state(map, loc):
+            return [1, 2]  # only for test
+
         print('Start Worker: ', self.task_index)
-        state_c = self.env.reset()  # could be abandon?
-        print("worker", self.task_index, state_c)
 
-        ep_r = 0
+        for _ in range(3):
+            state_map = self.env.reset()
+            print("worker", self.task_index, state_map)
+            ep_r = 0
+            Done = False
+            while not Done:
+                ants_done = False
+                for index in range(state_map[0]):
+                    # get state for each ant
+                    loc = (0, 0)  # only for test
+                    s_a = get_ant_state(state_map, loc)
+                    # get action for each ant
+                    action = choose_action(s_a)
+                    ants_done = self.env.step_for_ant(action)
 
-        while True:
-            state_queue_in_one_step = []
-            ants_done = False
-            while not ants_done:
-                s_a, loc = self.env.get_ant_State()
-                state_queue_in_one_step.append((s_a, loc))
-                action = choose_action(s_a)
-                ants_done = self.env.take_action(action, loc)
+                state_map_, reward, Done = self.env.step()
+                # do update N-Network
+                state_map = state_map_
 
-            reward, Done = self.env.getReward()
+            print('episode : finished')
 
 
 
 if __name__ == "__main__":
     workers = []
     # Create Worker
-    for i in range(2):
+    for i in range(1):
         i_name = 'W_%i' % i
         workers.append(Worker(i_name, i))
 
