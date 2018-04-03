@@ -3,7 +3,7 @@ from ants import *
 import sys
 import socket
 
-port = 8040
+port = 28040
 
 
 # define a class with a do_turn method

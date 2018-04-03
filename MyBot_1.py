@@ -6,7 +6,7 @@ import pickle
 import json
 
 
-port = 8039
+port = 28029
 botMark = 'bot1'
 PREFIX_S = b'state:'
 
@@ -47,9 +47,9 @@ class MyBot:
 
         # generate state for entire map
         num = len(ants.my_ants())
-        ant_state = [num, 0, 1, 2, 3]  # only for test
+        ant_state = [num, 0, 1, 2, 3, self.test_num]  # only for test
         self.client.sendall(pickle.dumps(ant_state))
-
+        self.test_num += 1
         # waite to receive action
         for ant_loc in ants.my_ants():
             action = self.client.recv(1024)

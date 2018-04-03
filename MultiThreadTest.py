@@ -21,20 +21,22 @@ class Worker(object):
 
         for _ in range(3):
             state_map = self.env.reset()
-            print("worker", self.task_index, state_map)
+            print("worker", self.task_index, "receive first state", state_map)
+            steps_num = 1
             ep_r = 0
             Done = False
             while not Done:
-                ants_done = False
+                # print('start a new step')
                 for index in range(state_map[0]):
                     # get state for each ant
                     loc = (0, 0)  # only for test
                     s_a = get_ant_state(state_map, loc)
                     # get action for each ant
                     action = choose_action(s_a)
-                    ants_done = self.env.step_for_ant(action)
-
+                    self.env.step_for_ant(action)
                 state_map_, reward, Done = self.env.step()
+                steps_num += 1
+                print(steps_num)
                 # do update N-Network
                 state_map = state_map_
 

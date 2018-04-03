@@ -280,6 +280,7 @@ class Ants():
                 else:
                     map_data += current_line + '\n'
             except EOFError:
+                print('end1')
                 break
             except KeyboardInterrupt:
                 raise

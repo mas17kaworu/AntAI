@@ -7,15 +7,15 @@ import socket
 from queue import Queue
 import threading
 
-Start_play_command = 'C:\Python27\python tools/playgame.py "python %s" "python tools/sample_bots/python/HunterBot.py"  ' \
-                     '--map_file "tools/maps/example/tutorial1.map" --log_dir %s --turns 60 --scenario  ' \
+Start_play_command = 'D:\Python27\python tools/playgame.py "python %s" "python tools/sample_bots/python/HunterBot.py"  ' \
+                     '--map_file "tools/maps/example/tutorial1.map" --log_dir %s --turns 60 --scenario --nolaunch  ' \
                      '--player_seed 7   -e'
 # --verbose   --nolaunch
 
 PREFIX_S = b'state:'
-PORT1 = 8039
-PORT2 = 8040
-PORT3 = 8038
+PORT1 = 28029
+PORT2 = 28040
+PORT3 = 28038
 
 
 class AntEnv:
@@ -62,14 +62,15 @@ class AntEnv:
         return self.queue.get(timeout=2000)
 
     def step(self):
-        reward = 0
-        # if action == 0:
-        #     reward = 10
-        # self.stepNum += 1
-        # if self.stepNum > 100:
-        #     self.DONE = True
+        reward = 0  # only for test
+        next_state=None
+        try:
+            next_state = self.queue.get(block=True, timeout=5)
+        except Exception as err:
+            self.DONE = True
+
         # send action to ant
-        return self.queue.get(timeout=1000), reward, self.DONE
+        return next_state, reward, self.DONE
 
     def start_server(self, portNum, queue):
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -99,4 +100,3 @@ class AntEnv:
             self.connection.sendall(action)
         except Exception as err:
             print(err)
-        return False
