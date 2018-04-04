@@ -47,12 +47,23 @@ class MyBot:
 
         # generate state for entire map
         num = len(ants.my_ants())
-        ant_state = [num, 0, 1, 2, 3, self.test_num]  # only for test
-        self.client.sendall(pickle.dumps(ant_state))
-        self.test_num += 1
-        # waite to receive action
+        map_state = [-2, -1, num, 0, 1, 2, 3, self.test_num]  # only for test
+        self.client.sendall(pickle.dumps(map_state))
+
+        # send Ants loc to Network
+        ants_loc = [-1, -2]
         for ant_loc in ants.my_ants():
-            action = self.client.recv(1024)
+            ants_loc.append(ant_loc)
+        self.client.sendall(pickle.dumps(ants_loc))
+
+        self.test_num += 1
+
+        # waite to receive action
+        for ant_loc in ants.my_ants():  # for in range (len(ants.my_ants())):
+            received = self.client.recv(1024)
+            data_arr = pickle.loads(received)
+            #ant_loc = (data_arr[0], data_arr[1])
+
             action = 'e'  # only for test
             new_loc = ants.destination(ant_loc, action)
             if ants.passable(new_loc):

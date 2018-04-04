@@ -4,7 +4,7 @@ import threading
 
 
 def choose_action(state):
-    return b'w'
+    return 0  # 0--stay 1--North 2--East 3--South 4--West
 
 
 class Worker(object):
@@ -19,7 +19,7 @@ class Worker(object):
 
         print('Start Worker: ', self.task_index)
 
-        for _ in range(3):
+        for _ in range(1):
             state_map = self.env.reset()
             print("worker", self.task_index, "receive first state", state_map)
             steps_num = 1
@@ -33,10 +33,10 @@ class Worker(object):
                     s_a = get_ant_state(state_map, loc)
                     # get action for each ant
                     action = choose_action(s_a)
-                    self.env.step_for_ant(action)
+                    self.env.step_for_ant(action, loc)
                 state_map_, reward, Done = self.env.step()
                 steps_num += 1
-                print(steps_num)
+                # print(steps_num)
                 # do update N-Network
                 state_map = state_map_
 
