@@ -8,7 +8,7 @@ from queue import Queue
 import threading
 
 Start_play_command = 'D:\Python27\python tools/playgame.py "python %s" "python tools/sample_bots/python/HunterBot.py"  ' \
-                     '--map_file "tools/maps/example/tutorial1.map" --log_dir %s --turns 60 --scenario --nolaunch  ' \
+                     '--map_file "tools/maps/example/tutorial1.map" --log_dir %s --turns 60 --scenario  ' \
                      '--player_seed 7   -e'
 # --verbose   --nolaunch
 
@@ -59,7 +59,7 @@ class AntEnv:
         next_ants = None
         try:
             next_state = self.state_queue.get(block=True, timeout=5)
-            next_ants = self.ants_loc_queue.get(block=True, timeout=5)
+            next_ants = self.ants_loc_queue.get(block=True, timeout=2)
         except Exception as err:
             self.DONE = True
 

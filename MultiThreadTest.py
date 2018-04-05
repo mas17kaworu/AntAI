@@ -1,10 +1,12 @@
 import multiprocessing as mp
+import numpy as np
 import EnvTest
 import threading
 
 
 def choose_action(state):
-    return 0  # 0--stay 1--North 2--East 3--South 4--West
+    action = np.random.randint(0, 5)
+    return action  # 0--stay 1--North 2--East 3--South 4--West
 
 
 class Worker(object):
@@ -19,7 +21,7 @@ class Worker(object):
 
         print('Start Worker: ', self.task_index)
 
-        for _ in range(1):
+        for _ in range(3):
             state_map, ants_loc = self.env.reset()
             print("worker", self.task_index, "receive first state", state_map)
             steps_num = 1

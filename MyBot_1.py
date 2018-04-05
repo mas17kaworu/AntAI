@@ -61,10 +61,12 @@ class MyBot:
         # waite to receive action
         for ant_loc in ants.my_ants():  # for in range (len(ants.my_ants())):
             received = self.client.recv(1024)
-            if received is not None:
-                data_arr = pickle.loads(received)
-                ant_loc = data_arr[0]
-            action = 'e'  # only for test
+            data_arr = pickle.loads(received)
+
+            ant_loc = data_arr[0]
+            action = choose_action(data_arr[1])
+            if action is None:
+                continue
             new_loc = ants.destination(ant_loc, action)
             if ants.passable(new_loc):
                 # an order is the location of a current ant and a direction
@@ -75,6 +77,14 @@ class MyBot:
                 break
 
 
+def choose_action(number):
+    return {
+        0: None,
+        1: 'n',
+        2: 'e',
+        3: 's',
+        4: 'w'
+    }.get(number)
 
 
 if __name__ == '__main__':
