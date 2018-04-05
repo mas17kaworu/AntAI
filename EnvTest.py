@@ -7,7 +7,7 @@ import socket
 from queue import Queue
 import threading
 
-Start_play_command = 'C:\Python27\python tools/playgame.py "python %s" "python tools/sample_bots/python/HunterBot.py"  ' \
+Start_play_command = 'D:\Python27\python tools/playgame.py "python %s" "python tools/sample_bots/python/HunterBot.py"  ' \
                      '--map_file "tools/maps/example/tutorial1.map" --log_dir %s --turns 60 --scenario --nolaunch  ' \
                      '--player_seed 7   -e'
 # --verbose   --nolaunch
@@ -29,53 +29,47 @@ class AntEnv:
         self.DONE = True
         self.state = [0 for _ in range(cols*rows)]
         self.s1 = np.array(self.state)
-
-        self.queue = Queue()
+        self.ants_loc_queue = Queue()
+        self.state_queue = Queue()
         self.connection = None
 
     def reset(self):
         command = ''
         self.DONE = False
-
+        self.state_queue.empty()
+        self.ants_loc_queue.empty()
         if self.Env_name == 'W_0':
             command = Start_play_command % ('MyBot_1.py', ('ant_log_' + self.Env_name))
-            t = threading.Thread(target=self.start_server, args=(PORT1, self.queue))
+            t = threading.Thread(target=self.start_server, args=(PORT1,))
             t.start()
             print(command)
         elif self.Env_name == 'W_1':
             command = Start_play_command % ('MyBot_2.py', ('ant_log_' + self.Env_name))
-            t = threading.Thread(target=self.start_server, args=(PORT2, self.queue))
+            t = threading.Thread(target=self.start_server, args=(PORT2,))
             t.start()
             print(command)
-###########################################################################################
-        # command = 'python stdCommTest.py'
-        # p = subprocess.run(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-        #
-        # p.stdin.write(b"Hello\n")
-        # p.stdin.flush()
-        # print('got', p.stdout.readline().strip())
-        # p.stdin.write(b"How are you?\n")
-        # p.stdin.flush()
-        # print('got', p.stdout.readline().strip())
-#############################################################################################
         os.popen(command)
-        return self.queue.get(timeout=2000)
+        tmp_state = self.state_queue.get(timeout=300)
+        tmp_ants = self.ants_loc_queue.get(timeout=300)
+        return tmp_state, tmp_ants
 
     def step(self):
         reward = 0  # only for test
         next_state = None
+        next_ants = None
         try:
-            next_state = self.queue.get(block=True, timeout=5)
+            next_state = self.state_queue.get(block=True, timeout=5)
+            next_ants = self.ants_loc_queue.get(block=True, timeout=5)
         except Exception as err:
             self.DONE = True
 
         # send action to ant
-        return next_state, reward, self.DONE
+        return next_state, next_ants, reward, self.DONE
 
-    def start_server(self, portNum, queue):
+    def start_server(self, port_num):
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-        server.bind(("127.0.0.1", portNum))
+        server.bind(("127.0.0.1", port_num))
         server.listen(1)
         # command = 'python socketCommTest.py'
         # os.system(command)
@@ -83,14 +77,16 @@ class AntEnv:
             self.connection, address = server.accept()
             while True:
                 received = self.connection.recv(1024)
-                if received != None:
+                if received is not None:
                     data_arr = pickle.loads(received)
                     if data_arr[0] == -2 and data_arr[1] == -1:
+                        self.state_queue.empty()
                         print('got state:', data_arr, ' Ants num = ', data_arr[0], 'first element', data_arr[1])
-                        queue.put(data_arr)
+                        self.state_queue.put(data_arr[2:])
                     if data_arr[0] == -1 and data_arr[1] == -2:
+                        self.ants_loc_queue.empty()
                         print('got ant:', data_arr, ' Ants num = ', data_arr[0], 'first element', data_arr[1])
-                        # queue.put(data_arr)
+                        self.ants_loc_queue.put(data_arr[2:])
                     # output = "test: %s" % received
                     # connection.sendall(output.encode('utf-8'))
         except Exception as err:
@@ -100,8 +96,8 @@ class AntEnv:
             self.connection.close()
 
     def step_for_ant(self, action, loc):
-        output = [loc[0], loc[1], action]
+        output = [loc, action]
         try:
-            self.connection.sendall(pickle.dumps(output))
+            self.connection.sendall(pickle.dumps(output, protocol=2))
         except Exception as err:
             print(err)

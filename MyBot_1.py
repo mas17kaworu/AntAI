@@ -61,9 +61,9 @@ class MyBot:
         # waite to receive action
         for ant_loc in ants.my_ants():  # for in range (len(ants.my_ants())):
             received = self.client.recv(1024)
-            data_arr = pickle.loads(received)
-            #ant_loc = (data_arr[0], data_arr[1])
-
+            if received is not None:
+                data_arr = pickle.loads(received)
+                ant_loc = data_arr[0]
             action = 'e'  # only for test
             new_loc = ants.destination(ant_loc, action)
             if ants.passable(new_loc):
