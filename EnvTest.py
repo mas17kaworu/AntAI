@@ -8,8 +8,8 @@ from queue import Queue
 import threading
 
 Start_play_command = 'D:\Python27\python tools/playgame.py "python %s" "python tools/sample_bots/python/HunterBot.py"  ' \
-                     '--map_file "tools/maps/example/tutorial1.map" --log_dir %s --turns 60 --scenario  ' \
-                     '--player_seed 7   -e'
+                     '--map_file "tools/maps/example/tutorial1.map" --log_dir %s --turns 60 --scenario  --nolaunch ' \
+                     ' --player_seed 7   -e'
 # --verbose   --nolaunch
 
 PREFIX_S = b'state:'
@@ -70,25 +70,21 @@ class AntEnv:
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
         server.bind(("127.0.0.1", port_num))
-        server.listen(1)
-        # command = 'python socketCommTest.py'
-        # os.system(command)
+        server.listen(5)
         try:
             self.connection, address = server.accept()
             while True:
-                received = self.connection.recv(1024)
+                received = self.connection.recv(32768)
                 if received is not None:
                     data_arr = pickle.loads(received)
                     if data_arr[0] == -2 and data_arr[1] == -1:
                         self.state_queue.empty()
-                        print('got state:', data_arr, ' Ants num = ', data_arr[0], 'first element', data_arr[1])
+                        print('got state:', data_arr)
                         self.state_queue.put(data_arr[2:])
                     if data_arr[0] == -1 and data_arr[1] == -2:
                         self.ants_loc_queue.empty()
-                        print('got ant:', data_arr, ' Ants num = ', data_arr[0], 'first element', data_arr[1])
+                        print('got ant:', data_arr)
                         self.ants_loc_queue.put(data_arr[2:])
-                    # output = "test: %s" % received
-                    # connection.sendall(output.encode('utf-8'))
         except Exception as err:
             self.DONE = True
             print('lk', err)
@@ -96,7 +92,8 @@ class AntEnv:
             self.connection.close()
 
     def step_for_ant(self, action, loc):
-        output = [loc, action]
+        output = [-1, -2, loc, action]
+        print(output)
         try:
             self.connection.sendall(pickle.dumps(output, protocol=2))
         except Exception as err:

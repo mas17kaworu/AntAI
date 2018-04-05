@@ -21,9 +21,9 @@ class Worker(object):
 
         print('Start Worker: ', self.task_index)
 
-        for _ in range(3):
+        for _ in range(1):
             state_map, ants_loc = self.env.reset()
-            print("worker", self.task_index, "receive first state", state_map)
+            # print("worker", self.task_index, "receive first state", state_map)
             steps_num = 1
             ep_r = 0
             Done = False
@@ -34,7 +34,6 @@ class Worker(object):
                     s_a = get_ant_state(state_map, loc)
                     # get action for each ant
                     action = choose_action(s_a)
-                    print(loc)
                     self.env.step_for_ant(action, loc)
                 state_map_, ants_loc_, reward, Done = self.env.step()
                 steps_num += 1
