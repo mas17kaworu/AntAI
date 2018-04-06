@@ -9,7 +9,7 @@ import struct
 import threading
 
 Start_play_command = 'D:\Python27\python tools/playgame.py "python %s" "python tools/sample_bots/python/HunterBot.py"  ' \
-                     '--map_file "tools/maps/example/tutorial1.map" --log_dir %s --turns 60 --scenario  --nolaunch ' \
+                     '--map_file "tools/maps/example/tutorial1.map" --log_dir %s --turns 60 --scenario   --nolaunch' \
                      ' --player_seed 7   -e'
 # --verbose   --nolaunch
 
@@ -87,11 +87,11 @@ class AntEnv:
                     data_arr = pickle.loads(received)
                     if data_arr[0] == -2 and data_arr[1] == -1:
                         self.state_queue.empty()
-                        print('got state:', data_arr)
+                        # print('got state:', data_arr)
                         self.state_queue.put(data_arr[2:])
                     if data_arr[0] == -1 and data_arr[1] == -2:
                         self.ants_loc_queue.empty()
-                        print('got ant:', data_arr)
+                        # print('got ant:', data_arr)
                         self.ants_loc_queue.put(data_arr[2:])
         except Exception as err:
             self.DONE = True
