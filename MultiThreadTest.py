@@ -27,6 +27,7 @@ class Worker(object):
             steps_num = 1
             ep_r = 0
             Done = False
+            actions_queue = []
             while not Done:
                 # print('start a new step')
                 for loc in ants_loc:
@@ -34,8 +35,10 @@ class Worker(object):
                     s_a = get_ant_state(state_map, loc)
                     # get action for each ant
                     action = choose_action(s_a)
-                    self.env.step_for_ant(action, loc)
-                state_map_, ants_loc_, reward, Done = self.env.step()
+                    actions_queue.append(loc)
+                    actions_queue.append(action)
+                state_map_, ants_loc_, reward, Done = self.env.step(actions_queue)
+                actions_queue.clear()
                 steps_num += 1
                 # print(steps_num)
                 # do update N-Network

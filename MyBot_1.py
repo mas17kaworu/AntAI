@@ -53,13 +53,13 @@ class MyBot:
         self.client.sendall(pickle.dumps(ants_loc))
 
         self.test_num += 1
-
+        data_arr = self.queue.get(timeout=1)
+        antLog.write_log(str(data_arr))
         # waite to receive action
-        for _ in range(len(ants.my_ants())):
-            data_arr = self.queue.get(timeout=1)
-            antLog.write_log(str(data_arr))
-            ant_loc = data_arr[0]
-            action = choose_action(data_arr[1])
+        for index in range(len(ants.my_ants())):
+
+            ant_loc = data_arr[index*2]
+            action = choose_action(data_arr[index*2+1])
             if action is None:
                 continue
             new_loc = ants.destination(ant_loc, action)
@@ -76,14 +76,10 @@ class MyBot:
         self.client.connect(("127.0.0.1", port))
         try:
             while True:
-                received = self.client.recv(256)
-                antLog.write_log(str(received))
+                received = self.client.recv(2048)
                 if not received: break
-
                 data_arr = pickle.loads(received)
-
-                if data_arr[0] == -1 and data_arr[1] == -2:
-                    self.queue.put(data_arr[2:])
+                self.queue.put(data_arr)
             self.client.close()
         except Exception as err:
             pass

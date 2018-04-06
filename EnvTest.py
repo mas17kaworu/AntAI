@@ -5,6 +5,7 @@ import pickle
 import os
 import socket
 from queue import Queue
+import struct
 import threading
 
 Start_play_command = 'D:\Python27\python tools/playgame.py "python %s" "python tools/sample_bots/python/HunterBot.py"  ' \
@@ -53,15 +54,22 @@ class AntEnv:
         tmp_ants = self.ants_loc_queue.get(timeout=300)
         return tmp_state, tmp_ants
 
-    def step(self):
+    def step(self, actions):
+
         reward = 0  # only for test
         next_state = None
         next_ants = None
+        print(actions)
+        self.connection.sendall(pickle.dumps(actions, protocol=2))
+
         try:
             next_state = self.state_queue.get(block=True, timeout=5)
             next_ants = self.ants_loc_queue.get(block=True, timeout=2)
         except Exception as err:
             self.DONE = True
+
+
+
 
         # send action to ant
         return next_state, next_ants, reward, self.DONE
@@ -70,7 +78,7 @@ class AntEnv:
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
         server.bind(("127.0.0.1", port_num))
-        server.listen(5)
+        server.listen(2)
         try:
             self.connection, address = server.accept()
             while True:
@@ -92,9 +100,10 @@ class AntEnv:
             self.connection.close()
 
     def step_for_ant(self, action, loc):
-        output = [-1, -2, loc, action]
-        print(output)
+        output = [0, loc, action]
+        test = bytes(output)
+        print(int(test[0]))
         try:
-            self.connection.sendall(pickle.dumps(output, protocol=2))
+            self.connection.sendall(bytes(output))
         except Exception as err:
             print(err)
