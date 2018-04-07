@@ -1,11 +1,8 @@
 import numpy as np
-import subprocess
-import multiprocessing
 import pickle
 import os
 import socket
 from queue import Queue
-import struct
 import threading
 
 Start_play_command = 'D:\Python27\python tools/playgame.py "python %s" "python tools/sample_bots/python/HunterBot.py"  ' \
@@ -13,7 +10,6 @@ Start_play_command = 'D:\Python27\python tools/playgame.py "python %s" "python t
                      ' --player_seed 7   -e'
 # --verbose   --nolaunch
 
-PREFIX_S = b'state:'
 PORT1 = 28029
 PORT2 = 28040
 PORT3 = 28038
@@ -22,8 +18,8 @@ PORT3 = 28038
 class AntEnv:
     def __init__(self, name):
         self.Env_name = name
-        self.observation_space_shape = 400
-        self.action_space_num = 5
+        self.observation_space_shape = 400  # 20*20??
+        self.action_space_num = 5  # Action space  # 0--stay 1--North 2--East 3--South 4--West
         cols = 20
         rows = 20
         self.stepNum = 0
