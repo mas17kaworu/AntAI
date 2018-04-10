@@ -4,7 +4,7 @@ import EnvTest
 import threading
 
 GLOBAL_NET_SCOPE = 'global_net'
-UPDATE_GLOBAL_ITER = 10
+UPDATE_GLOBAL_ITER = 1
 GAMMA = 0.9
 ENTROPY_BETA = 0.001
 LR_A = 0.001    # learning rate for actor
@@ -64,10 +64,10 @@ class ACNet(object):
     def _build_net(self, scope):
         w_init = tf.random_normal_initializer(0., .1)
         with tf.variable_scope('actor'):
-            l_a = tf.layers.dense(self.s, 200, tf.nn.relu6, kernel_initializer=w_init, name='la')
+            l_a = tf.layers.dense(self.s, 5000, tf.nn.relu6, kernel_initializer=w_init, name='la')
             a_prob = tf.layers.dense(l_a, N_A, tf.nn.softmax, kernel_initializer=w_init, name='ap')
         with tf.variable_scope('critic'):
-            l_c = tf.layers.dense(self.s, 100, tf.nn.relu6, kernel_initializer=w_init, name='lc')
+            l_c = tf.layers.dense(self.s, 5000, tf.nn.relu6, kernel_initializer=w_init, name='lc')
             v = tf.layers.dense(l_c, 1, kernel_initializer=w_init, name='v')  # state value
         a_params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope + '/actor')
         c_params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope + '/critic')
@@ -86,11 +86,9 @@ class ACNet(object):
         SESS.run([self.pull_a_params_op, self.pull_c_params_op])
 
 
-
-
-def choose_action(state):
-    action = np.random.randint(0, 5)
-    return action  # 0--stay 1--North 2--East 3--South 4--West
+# def choose_action(state):
+#     action = np.random.randint(0, 5)
+#     return action  # 0--stay 1--North 2--East 3--South 4--West
 
 
 class Worker(object):
@@ -101,14 +99,17 @@ class Worker(object):
         self.AC = ACNet(name, globalAC)
 
     def work(self):
-        def get_ant_state(map, loc):
-            return [1, 2]  # only for test
+        def get_ant_state(map_, loc_):
+            map_extend = np.insert(map_, map_.shape, loc_)
+            return map_extend  # only for test
+
         global GLOBAL_RUNNING_R, GLOBAL_EP
         print('Start Worker: ', self.task_index)
         total_step = 1
         buffer_s, buffer_a, buffer_r = [], [], []
         for _ in range(1):  # while not(COORD.should_stop()) and (GLOBAL_EP < MAX_GLOBAL_EP):
             state_map, ants_loc = self.env.reset()
+            state_map = state_map.flatten()
             # print("worker", self.task_index, "receive first state", state_map)
             steps_num = 1
             ep_r = 0
@@ -123,7 +124,11 @@ class Worker(object):
                     action = self.AC.choose_action(s_a)
                     actions_queue.append(loc)
                     actions_queue.append(action)
+
+                    buffer_a.append(action)
+                    buffer_s.append(s_a)
                 state_map_, ants_loc_, reward, Done = self.env.step(actions_queue)
+                state_map_ = state_map_.flatten()
                 ep_r += reward
 
                 # buffer_s.append()
@@ -134,8 +139,24 @@ class Worker(object):
                     if Done:
                         v_s_ = 0
                     else:
-                        v_s_ = SESS.run(self.AC.v, {self.AC.})  # RNN? use s_a in one step
+                        extend_s_m_ = np.insert(state_map_, state_map_.shape, (0, 0))
+                        v_s_ = SESS.run(self.AC.v, {self.AC.s: extend_s_m_[np.newaxis, :]})[0, 0]  # RNN? use s_a in one step
+                    buffer_v_target = []
+                    for r in buffer_r[::-1]:  # reverse buffer r
+                        v_s_ = r + GAMMA * v_s_
+                        buffer_v_target.append(v_s_)
+                    buffer_v_target.reverse()
 
+                    buffer_s, buffer_a, buffer_v_target = np.vstack(buffer_s), np.array(buffer_a), np.vstack(
+                        buffer_v_target)
+                    feed_dict = {
+                        self.AC.s: buffer_s,
+                        self.AC.a_his: buffer_a,
+                        self.AC.v_target: buffer_v_target,
+                    }
+                    self.AC.update_global(feed_dict)
+                    buffer_s, buffer_a, buffer_r = [], [], []
+                    self.AC.pull_global()
 
                 actions_queue.clear()
                 steps_num += 1
