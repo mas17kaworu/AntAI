@@ -53,7 +53,7 @@ class MyBot:
         self.client.sendall(pickle.dumps(ants_loc))
 
         self.test_num += 1
-        data_arr = self.queue.get(timeout=1)
+        data_arr = self.queue.get(timeout=3)
         antLog.write_log(str(data_arr))
         # waite to receive action
         for index in range(len(ants.my_ants())):

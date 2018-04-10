@@ -7,7 +7,7 @@ import threading
 
 Start_play_command = 'D:\Python27\python tools/playgame.py "python %s" "python tools/sample_bots/python/HunterBot.py"  ' \
                      '--map_file "tools/maps/example/tutorial1.map" --log_dir %s --turns 60 --scenario   --nolaunch' \
-                     ' --player_seed 7   -e'
+                     ' --player_seed 7  --turntime 5000 -e'
 # --verbose   --nolaunch
 
 PORT1 = 28029
@@ -18,7 +18,7 @@ PORT3 = 28038
 class AntEnv:
     def __init__(self, name):
         self.Env_name = name
-        self.observation_space_shape = 400 + 2  # 20*20??
+        self.observation_space_shape = 1677 + 2  # 43*39=1677
         self.action_space_num = 5  # Action space  # 0--stay 1--North 2--East 3--South 4--West
         cols = 20
         rows = 20
@@ -47,28 +47,28 @@ class AntEnv:
             print(command)
         os.popen(command)
         tmp_state = self.state_queue.get(timeout=300)
+        tmp_state = np.array(tmp_state)
         tmp_ants = self.ants_loc_queue.get(timeout=300)
         return tmp_state, tmp_ants
 
     def step(self, actions):
 
-        reward = 0  # only for test
         next_state = None
         next_ants = None
-        print(actions)
+        print("action = ", actions)
         self.connection.sendall(pickle.dumps(actions, protocol=2))
 
         try:
             next_state = self.state_queue.get(block=True, timeout=5)
+            next_state = np.array(next_state)
             next_ants = self.ants_loc_queue.get(block=True, timeout=2)
+
         except Exception as err:
             self.DONE = True
-
-
-
-
+        print("next_ants = ", next_ants)
+        # reward = len(next_ants)
         # send action to ant
-        return next_state, next_ants, reward, self.DONE
+        return next_state, next_ants, 10, self.DONE
 
     def start_server(self, port_num):
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
