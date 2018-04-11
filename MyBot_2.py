@@ -6,7 +6,7 @@ import Queue
 import threading
 
 
-port_remote = 28040
+port_remote = 22040
 botMark = 'bot2'
 PREFIX_S = b'state:'
 

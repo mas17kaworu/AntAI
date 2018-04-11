@@ -10,10 +10,10 @@ Start_play_command = 'D:\Python27\python tools/playgame.py "python %s" "python t
                      ' --player_seed 7  --turntime 5000 -e'
 # --verbose   --nolaunch
 
-PORT1 = 28029
-PORT2 = 28040
-PORT3 = 28038
-PORT4 = 28041
+PORT1 = 22029
+PORT2 = 22040
+PORT3 = 22038
+PORT4 = 22041
 
 
 class AntEnv:
@@ -48,12 +48,12 @@ class AntEnv:
             print(command)
         elif self.Env_name == 'W_2':
             command = Start_play_command % ('MyBot_3.py', ('ant_log_' + self.Env_name))
-            t = threading.Thread(target=self.start_server, args=(PORT2,))
+            t = threading.Thread(target=self.start_server, args=(PORT3,))
             t.start()
             print(command)
         elif self.Env_name == 'W_3':
             command = Start_play_command % ('MyBot_4.py', ('ant_log_' + self.Env_name))
-            t = threading.Thread(target=self.start_server, args=(PORT2,))
+            t = threading.Thread(target=self.start_server, args=(PORT4,))
             t.start()
             print(command)
         os.popen(command)
