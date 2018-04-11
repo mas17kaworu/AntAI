@@ -41,10 +41,10 @@ class ACNet(object):
                 with tf.name_scope('a_loss'):
                     log_prob = tf.reduce_sum(
                         tf.log(self.a_prob) * tf.one_hot(self.a_his, N_A, dtype=tf.float32),
-                        axis=1, keep_dims=True)
+                        axis=1, keepdims=True)
                     exp_v = log_prob * tf.stop_gradient(td)
                     entropy = -tf.reduce_sum(self.a_prob * tf.log(self.a_prob + 1e-5),
-                                             axis=1, keep_dims=True)  # encourage exploration
+                                             axis=1, keepdims=True)  # encourage exploration
                     self.exp_v = ENTROPY_BETA * entropy + exp_v
                     self.a_loss = tf.reduce_mean(-self.exp_v)
 
@@ -86,9 +86,9 @@ class ACNet(object):
         SESS.run([self.pull_a_params_op, self.pull_c_params_op])
 
 
-# def choose_action(state):
-#     action = np.random.randint(0, 5)
-#     return action  # 0--stay 1--North 2--East 3--South 4--West
+def choose_action_only_for_test(state):
+    action = np.random.randint(0, 5)
+    return action  # 0--stay 1--North 2--East 3--South 4--West
 
 
 class Worker(object):
@@ -122,8 +122,11 @@ class Worker(object):
                     s_a = get_ant_state(state_map, loc)
                     # get action for each ant
                     action = self.AC.choose_action(s_a)
+                    # action = choose_action_only_for_test(s_a)
+
+                    action_nomal = action.tolist()
                     actions_queue.append(loc)
-                    actions_queue.append(action)
+                    actions_queue.append(action_nomal)
 
                     buffer_a.append(action)
                     buffer_s.append(s_a)
@@ -131,8 +134,6 @@ class Worker(object):
                 state_map_ = state_map_.flatten()
                 ep_r += reward
 
-                # buffer_s.append()
-                # buffer_a.append()
                 buffer_r.append(reward)
                 # do update N-Network
                 if total_step % UPDATE_GLOBAL_ITER == 0 or Done:

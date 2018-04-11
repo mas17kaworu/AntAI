@@ -28,7 +28,7 @@ class MyBot:
     # the ants class is created and setup by the Ants.run method
     def do_setup(self, ants):
         print("In mybot1 setup")
-        antLog.write_log("setup")
+        # antLog.write_log("setup")
         t = threading.Thread(target=self.start_client, args=(port_remote,))
         t.start()
         # self.client.connect(("127.0.0.1", port))
@@ -39,7 +39,7 @@ class MyBot:
     def do_turn(self, ants):
         # loop through all my ants and try to give them orders
         # the ant_loc is an ant location tuple in (row, col) form
-        antLog.write_log("do_turn")
+        # antLog.write_log("do_turn")
         self.queue.empty()
         # generate state for entire map
         map_state = [-2, -1]  # only for test
@@ -52,6 +52,7 @@ class MyBot:
             ants_loc.append(ant_loc)
         self.client.sendall(pickle.dumps(ants_loc))
 
+        #  wait for actions
         self.test_num += 1
         data_arr = self.queue.get(timeout=3)
         antLog.write_log(str(data_arr))
@@ -77,10 +78,8 @@ class MyBot:
         try:
             while True:
                 received = self.client.recv(2048)
-                if not received: break
                 data_arr = pickle.loads(received)
                 self.queue.put(data_arr)
-            self.client.close()
         except Exception as err:
             pass
 

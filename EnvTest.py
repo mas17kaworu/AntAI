@@ -5,7 +5,7 @@ import socket
 from queue import Queue
 import threading
 
-Start_play_command = 'D:\Python27\python tools/playgame.py "python %s" "python tools/sample_bots/python/HunterBot.py"  ' \
+Start_play_command = 'C:\Python27\python tools/playgame.py "python %s" "python tools/sample_bots/python/HunterBot.py"  ' \
                      '--map_file "tools/maps/example/tutorial1.map" --log_dir %s --turns 60 --scenario   --nolaunch' \
                      ' --player_seed 7  --turntime 5000 -e'
 # --verbose   --nolaunch
@@ -57,7 +57,6 @@ class AntEnv:
         next_ants = None
         print("action = ", actions)
         self.connection.sendall(pickle.dumps(actions, protocol=2))
-
         try:
             next_state = self.state_queue.get(block=True, timeout=5)
             next_state = np.array(next_state)
@@ -66,9 +65,9 @@ class AntEnv:
         except Exception as err:
             self.DONE = True
         print("next_ants = ", next_ants)
-        # reward = len(next_ants)
+        reward = len(next_ants)
         # send action to ant
-        return next_state, next_ants, 10, self.DONE
+        return next_state, next_ants, reward, self.DONE
 
     def start_server(self, port_num):
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
