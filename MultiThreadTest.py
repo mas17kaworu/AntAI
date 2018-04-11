@@ -7,8 +7,8 @@ GLOBAL_NET_SCOPE = 'global_net'
 UPDATE_GLOBAL_ITER = 1
 GAMMA = 0.9
 ENTROPY_BETA = 0.001
-LR_A = 0.001    # learning rate for actor
-LR_C = 0.001    # learning rate for critic
+LR_A = 0.0001    # learning rate for actor
+LR_C = 0.0001    # learning rate for critic
 
 MAX_GLOBAL_EP = 1000
 GLOBAL_RUNNING_R = []
@@ -40,7 +40,7 @@ class ACNet(object):
 
                 with tf.name_scope('a_loss'):
                     log_prob = tf.reduce_sum(
-                        tf.log(self.a_prob) * tf.one_hot(self.a_his, N_A, dtype=tf.float32),
+                        tf.log(tf.clip_by_value(self.a_prob, 1e-8, 1.0)) * tf.one_hot(self.a_his, N_A, dtype=tf.float32),
                         axis=1, keepdims=True)
                     exp_v = log_prob * tf.stop_gradient(td)
                     entropy = -tf.reduce_sum(self.a_prob * tf.log(self.a_prob + 1e-5),
@@ -64,10 +64,10 @@ class ACNet(object):
     def _build_net(self, scope):
         w_init = tf.random_normal_initializer(0., .1)
         with tf.variable_scope('actor'):
-            l_a = tf.layers.dense(self.s, 5000, tf.nn.relu6, kernel_initializer=w_init, name='la')
+            l_a = tf.layers.dense(self.s, 2000, tf.nn.relu, kernel_initializer=w_init, name='la')
             a_prob = tf.layers.dense(l_a, N_A, tf.nn.softmax, kernel_initializer=w_init, name='ap')
         with tf.variable_scope('critic'):
-            l_c = tf.layers.dense(self.s, 5000, tf.nn.relu6, kernel_initializer=w_init, name='lc')
+            l_c = tf.layers.dense(self.s, 2000, tf.nn.relu, kernel_initializer=w_init, name='lc')
             v = tf.layers.dense(l_c, 1, kernel_initializer=w_init, name='v')  # state value
         a_params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope + '/actor')
         c_params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope + '/critic')
@@ -75,10 +75,9 @@ class ACNet(object):
 
     def choose_action(self, s):  # run by a local
         prob_weights = SESS.run(self.a_prob, feed_dict={self.s: s[np.newaxis, :]})
-        # print("shape", prob_weights.shape[1])
-        # print("prob", prob_weights.ravel())
-        action = np.random.choice(range(prob_weights.shape[1]),
-                                  p=prob_weights.ravel())  # select action w.r.t the actions prob
+        # print("s shape = ", s.shape)
+        print("prob", prob_weights)
+        action = np.random.choice(range(prob_weights.shape[1]), p=prob_weights.ravel())  # select action w.r.t the actions prob
         return action
 
     def update_global(self, feed_dict):  # run by a local
@@ -133,9 +132,10 @@ class Worker(object):
                     buffer_a.append(action)
                     buffer_s.append(s_a)
                 state_map_, ants_loc_, reward, Done = self.env.step(actions_queue)
-                state_map_ = state_map_.flatten()
-                ep_r += reward
+                if not Done:
+                    state_map_ = state_map_.flatten()
 
+                ep_r += reward
                 buffer_r.append(reward)
                 # do update N-Network
                 if total_step % UPDATE_GLOBAL_ITER == 0 or Done:
