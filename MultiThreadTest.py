@@ -75,6 +75,8 @@ class ACNet(object):
 
     def choose_action(self, s):  # run by a local
         prob_weights = SESS.run(self.a_prob, feed_dict={self.s: s[np.newaxis, :]})
+        # print("shape", prob_weights.shape[1])
+        # print("prob", prob_weights.ravel())
         action = np.random.choice(range(prob_weights.shape[1]),
                                   p=prob_weights.ravel())  # select action w.r.t the actions prob
         return action
