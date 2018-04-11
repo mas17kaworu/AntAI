@@ -10,7 +10,7 @@ ENTROPY_BETA = 0.001
 LR_A = 0.0001    # learning rate for actor
 LR_C = 0.0001    # learning rate for critic
 
-MAX_GLOBAL_EP = 1000
+MAX_GLOBAL_EP = 3
 GLOBAL_RUNNING_R = []
 GLOBAL_EP = 0
 THREAD_NUM = 4
@@ -64,10 +64,10 @@ class ACNet(object):
     def _build_net(self, scope):
         w_init = tf.random_normal_initializer(0., .1)
         with tf.variable_scope('actor'):
-            l_a = tf.layers.dense(self.s, 2000, tf.nn.relu, kernel_initializer=w_init, name='la')
+            l_a = tf.layers.dense(self.s, 5000, tf.nn.relu, kernel_initializer=w_init, name='la')
             a_prob = tf.layers.dense(l_a, N_A, tf.nn.softmax, kernel_initializer=w_init, name='ap')
         with tf.variable_scope('critic'):
-            l_c = tf.layers.dense(self.s, 2000, tf.nn.relu, kernel_initializer=w_init, name='lc')
+            l_c = tf.layers.dense(self.s, 5000, tf.nn.relu, kernel_initializer=w_init, name='lc')
             v = tf.layers.dense(l_c, 1, kernel_initializer=w_init, name='v')  # state value
         a_params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope + '/actor')
         c_params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope + '/critic')
@@ -76,7 +76,7 @@ class ACNet(object):
     def choose_action(self, s):  # run by a local
         prob_weights = SESS.run(self.a_prob, feed_dict={self.s: s[np.newaxis, :]})
         # print("s shape = ", s.shape)
-        print("prob", prob_weights)
+        # print("prob", prob_weights)
         action = np.random.choice(range(prob_weights.shape[1]), p=prob_weights.ravel())  # select action w.r.t the actions prob
         return action
 
@@ -108,7 +108,8 @@ class Worker(object):
         print('Start Worker: ', self.task_index)
         total_step = 1
         buffer_s, buffer_a, buffer_r = [], [], []
-        for _ in range(1):  # while not(COORD.should_stop()) and (GLOBAL_EP < MAX_GLOBAL_EP):
+        # for _ in range(1):
+        while not(COORD.should_stop()) and (GLOBAL_EP < MAX_GLOBAL_EP):
             state_map, ants_loc = self.env.reset()
             state_map = state_map.flatten()
             # print("worker", self.task_index, "receive first state", state_map)
@@ -167,6 +168,10 @@ class Worker(object):
                 state_map = state_map_
                 ants_loc = ants_loc_
 
+                if Done:
+                    GLOBAL_EP += 1
+                    print("worker ", self.task_name, " T_reward = ", ep_r)
+
             print('episode : finished')
 
 
@@ -180,7 +185,7 @@ if __name__ == "__main__":
         global_net = ACNet(GLOBAL_NET_SCOPE)
         workers = []
         # Create Worker
-        for i in range(1):
+        for i in range(THREAD_NUM):
             i_name = 'W_%i' % i
             workers.append(Worker(i_name, i, global_net))
 

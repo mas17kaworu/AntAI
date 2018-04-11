@@ -9,7 +9,6 @@ import antLog
 
 port_remote = 28029
 botMark = 'bot1'
-PREFIX_S = b'state:'
 
 # define a class with a do_turn method
 # the Ants.run method will parse and update bot input
@@ -55,7 +54,7 @@ class MyBot:
         #  wait for actions
         self.test_num += 1
         data_arr = self.queue.get(timeout=3)
-        antLog.write_log(str(data_arr))
+        # antLog.write_log(str(data_arr))
         # waite to receive action
         for index in range(len(ants.my_ants())):
 

@@ -13,6 +13,7 @@ Start_play_command = 'D:\Python27\python tools/playgame.py "python %s" "python t
 PORT1 = 28029
 PORT2 = 28040
 PORT3 = 28038
+PORT4 = 28041
 
 
 class AntEnv:
@@ -45,6 +46,16 @@ class AntEnv:
             t = threading.Thread(target=self.start_server, args=(PORT2,))
             t.start()
             print(command)
+        elif self.Env_name == 'W_2':
+            command = Start_play_command % ('MyBot_3.py', ('ant_log_' + self.Env_name))
+            t = threading.Thread(target=self.start_server, args=(PORT2,))
+            t.start()
+            print(command)
+        elif self.Env_name == 'W_3':
+            command = Start_play_command % ('MyBot_4.py', ('ant_log_' + self.Env_name))
+            t = threading.Thread(target=self.start_server, args=(PORT2,))
+            t.start()
+            print(command)
         os.popen(command)
         tmp_state = self.state_queue.get(timeout=300)
         tmp_state = np.array(tmp_state)
@@ -55,7 +66,7 @@ class AntEnv:
 
         next_state = None
         next_ants = None
-        print("action = ", actions)
+        # print("action = ", actions)
         self.connection.sendall(pickle.dumps(actions, protocol=2))
         try:
             next_state = self.state_queue.get(block=True, timeout=5)
@@ -64,7 +75,7 @@ class AntEnv:
 
         except Exception as err:
             self.DONE = True
-        print("next_ants = ", next_ants)
+        # print("next_ants = ", next_ants)
         if not self.DONE:
             reward = len(next_ants)
         else:
@@ -97,11 +108,11 @@ class AntEnv:
         finally:
             self.connection.close()
 
-    def step_for_ant(self, action, loc):
-        output = [0, loc, action]
-        test = bytes(output)
-        print(int(test[0]))
-        try:
-            self.connection.sendall(bytes(output))
-        except Exception as err:
-            print(err)
+    # def step_for_ant(self, action, loc):
+    #     output = [0, loc, action]
+    #     test = bytes(output)
+    #     print(int(test[0]))
+    #     try:
+    #         self.connection.sendall(bytes(output))
+    #     except Exception as err:
+    #         print(err)
