@@ -8,7 +8,7 @@ UPDATE_GLOBAL_ITER = 1
 GAMMA = 0.9
 ENTROPY_BETA = 0.001
 LR_A = 0.00001    # learning rate for actor
-LR_C = 0.001    # learning rate for critic
+LR_C = 0.00001    # learning rate for critic
 
 MAX_GLOBAL_EP = 12
 GLOBAL_RUNNING_R = []

@@ -61,14 +61,16 @@ class AntEnv:
         tmp_state = []
         tmp_ants = []
         try:
-            tmp_state = self.state_queue.get(timeout=300)
+            tmp_state = self.state_queue.get(block=True, timeout=5)
             tmp_state = np.array(tmp_state)
             antLog.write_log('receive state ', self.Env_name)
-            tmp_ants = self.ants_loc_queue.get(timeout=300)
-            antLog.write_log('receive Ants ', self.Env_name)
+            tmp_ants = self.ants_loc_queue.get(block=True, timeout=6)
+            antLog.write_log('receive ants ', self.Env_name)
         except Exception as err:
+            self.connection.close
             antLog.write_log('receive exception in reset', self.Env_name)
             self.DONE = True
+
         return tmp_state, tmp_ants, self.DONE
 
     def step(self, actions):
@@ -78,10 +80,10 @@ class AntEnv:
         antLog.write_log('send to Ant %s' % str(actions), self.Env_name)
         self.connection.sendall(pickle.dumps(actions, protocol=2))
         try:
-            next_state = self.state_queue.get(block=True, timeout=5)
+            next_state = self.state_queue.get(timeout=5)
             next_state = np.array(next_state)
             antLog.write_log('receive state ', self.Env_name)
-            next_ants = self.ants_loc_queue.get(block=True, timeout=2)
+            next_ants = self.ants_loc_queue.get(timeout=1)
             antLog.write_log('receive Ants ', self.Env_name)
         except Exception as err:
             self.DONE = True
@@ -95,7 +97,6 @@ class AntEnv:
 
     def start_server(self, port_num):
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
         server.bind(("127.0.0.1", port_num))
         server.listen(2)
         try:

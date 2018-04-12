@@ -1,144 +1,967 @@
 *************************************setup**************************************
 turn 1
 receive state 
-receive Ants 
+receive ants 
 send to Ant [(28, 19), 2]
 [(28, 19), 2]
 turn 2
 receive state 
 receive Ants 
-send to Ant [(28, 20), 4]
-[(28, 20), 4]
+send to Ant [(28, 20), 0]
+[(28, 20), 0]
 turn 3
 receive state 
 receive Ants 
-send to Ant [(28, 19), 4]
-[(28, 19), 4]
+send to Ant [(28, 20), 0, (28, 19), 0]
+[(28, 20), 0, (28, 19), 0]
 turn 4
 receive state 
 receive Ants 
-send to Ant [(28, 18), 4, (28, 19), 4]
-[(28, 18), 4, (28, 19), 4]
+send to Ant [(28, 20), 0, (28, 19), 0]
+[(28, 20), 0, (28, 19), 0]
 turn 5
 receive state 
 receive Ants 
-send to Ant [(28, 19), 4]
-[(28, 19), 4]
+send to Ant [(28, 20), 0, (28, 19), 0]
+[(28, 20), 0, (28, 19), 0]
 turn 6
 receive state 
 receive Ants 
-send to Ant [(28, 18), 4]
-[(28, 18), 4]
+send to Ant [(28, 20), 0, (28, 19), 0]
+[(28, 20), 0, (28, 19), 0]
 turn 7
 receive state 
 receive Ants 
-send to Ant [(28, 17), 4, (28, 19), 4]
-[(28, 17), 4, (28, 19), 4]
+send to Ant [(28, 20), 0, (28, 19), 0]
+[(28, 20), 0, (28, 19), 0]
 turn 8
 receive state 
 receive Ants 
-send to Ant [(28, 18), 4, (28, 16), 4]
-[(28, 18), 4, (28, 16), 4]
+send to Ant [(28, 20), 0, (28, 19), 0]
+[(28, 20), 0, (28, 19), 0]
 turn 9
 receive state 
 receive Ants 
-send to Ant [(28, 15), 4, (28, 17), 4]
-[(28, 15), 4, (28, 17), 4]
+send to Ant [(28, 20), 0, (28, 19), 0]
+[(28, 20), 0, (28, 19), 0]
 turn 10
 receive state 
 receive Ants 
-send to Ant [(28, 14), 4, (28, 16), 4]
-[(28, 14), 4, (28, 16), 4]
+send to Ant [(28, 20), 0, (28, 19), 0]
+[(28, 20), 0, (28, 19), 0]
 turn 11
 receive state 
 receive Ants 
-send to Ant [(28, 13), 4, (28, 15), 4]
-[(28, 13), 4, (28, 15), 4]
+send to Ant [(28, 20), 0, (28, 19), 0]
+[(28, 20), 0, (28, 19), 0]
 turn 12
 receive state 
 receive Ants 
-send to Ant [(28, 12), 4, (28, 14), 4]
-[(28, 12), 4, (28, 14), 4]
+send to Ant [(28, 20), 0, (28, 19), 0]
+[(28, 20), 0, (28, 19), 0]
 turn 13
 receive state 
 receive Ants 
-send to Ant [(28, 13), 4, (28, 19), 4, (28, 11), 4]
-[(28, 13), 4, (28, 19), 4, (28, 11), 4]
+send to Ant [(28, 20), 0, (28, 19), 0]
+[(28, 20), 0, (28, 19), 0]
 turn 14
 receive state 
 receive Ants 
-send to Ant [(28, 10), 4, (28, 12), 4, (28, 19), 4, (28, 18), 4]
-[(28, 10), 4, (28, 12), 4, (28, 19), 4, (28, 18), 4]
+send to Ant [(28, 20), 0, (28, 19), 0]
+[(28, 20), 0, (28, 19), 0]
 turn 15
 receive state 
 receive Ants 
-send to Ant [(28, 17), 4, (28, 9), 4, (28, 11), 4, (28, 18), 4]
-[(28, 17), 4, (28, 9), 4, (28, 11), 4, (28, 18), 4]
+send to Ant [(28, 20), 0, (28, 19), 0]
+[(28, 20), 0, (28, 19), 0]
 turn 16
 receive state 
 receive Ants 
-send to Ant [(28, 10), 4, (28, 16), 4, (28, 17), 4, (28, 8), 4]
-[(28, 10), 4, (28, 16), 4, (28, 17), 4, (28, 8), 4]
+send to Ant [(28, 20), 0, (28, 19), 0]
+[(28, 20), 0, (28, 19), 0]
 turn 17
 receive state 
 receive Ants 
-send to Ant [(28, 7), 0, (28, 9), 0, (28, 15), 0, (28, 16), 0]
-[(28, 7), 0, (28, 9), 0, (28, 15), 0, (28, 16), 0]
+send to Ant [(28, 20), 0, (28, 19), 0]
+[(28, 20), 0, (28, 19), 0]
 turn 18
 receive state 
 receive Ants 
-send to Ant [(28, 7), 4, (28, 9), 4, (28, 15), 4, (28, 16), 4]
-[(28, 7), 4, (28, 9), 4, (28, 15), 4, (28, 16), 4]
+send to Ant [(28, 20), 0, (28, 19), 0]
+[(28, 20), 0, (28, 19), 0]
 turn 19
 receive state 
 receive Ants 
-send to Ant [(28, 14), 4, (28, 6), 4, (28, 15), 4, (28, 8), 4]
-[(28, 14), 4, (28, 6), 4, (28, 15), 4, (28, 8), 4]
+send to Ant [(28, 20), 0, (28, 19), 0]
+[(28, 20), 0, (28, 19), 0]
 turn 20
 receive state 
 receive Ants 
-send to Ant [(28, 5), 4, (28, 13), 4, (28, 7), 4, (28, 14), 4]
-[(28, 5), 4, (28, 13), 4, (28, 7), 4, (28, 14), 4]
+send to Ant [(28, 20), 0, (28, 19), 0]
+[(28, 20), 0, (28, 19), 0]
 turn 21
 receive state 
 receive Ants 
-send to Ant [(28, 5), 4, (28, 13), 4, (28, 12), 4, (28, 6), 4]
-[(28, 5), 4, (28, 13), 4, (28, 12), 4, (28, 6), 4]
+send to Ant [(28, 20), 0, (28, 19), 0]
+[(28, 20), 0, (28, 19), 0]
 turn 22
 receive state 
 receive Ants 
-send to Ant [(28, 12), 4, (28, 11), 4]
-[(28, 12), 4, (28, 11), 4]
+send to Ant [(28, 20), 0, (28, 19), 0]
+[(28, 20), 0, (28, 19), 0]
 turn 23
 receive state 
 receive Ants 
-send to Ant [(28, 10), 4, (28, 11), 4]
-[(28, 10), 4, (28, 11), 4]
+send to Ant [(28, 20), 0, (28, 19), 0]
+[(28, 20), 0, (28, 19), 0]
 turn 24
 receive state 
 receive Ants 
-send to Ant [(28, 10), 4, (28, 9), 4]
-[(28, 10), 4, (28, 9), 4]
+send to Ant [(28, 20), 0, (28, 19), 0]
+[(28, 20), 0, (28, 19), 0]
 turn 25
 receive state 
 receive Ants 
-send to Ant [(28, 9), 4, (28, 8), 4]
-[(28, 9), 4, (28, 8), 4]
+send to Ant [(28, 20), 0, (28, 19), 0]
+[(28, 20), 0, (28, 19), 0]
 turn 26
 receive state 
 receive Ants 
-send to Ant [(28, 7), 4, (28, 8), 4]
-[(28, 7), 4, (28, 8), 4]
+send to Ant [(28, 20), 0, (28, 19), 0]
+[(28, 20), 0, (28, 19), 0]
 turn 27
 receive state 
 receive Ants 
-send to Ant [(28, 7), 4, (28, 6), 4]
-[(28, 7), 4, (28, 6), 4]
+send to Ant [(28, 20), 0, (28, 19), 0]
+[(28, 20), 0, (28, 19), 0]
 turn 28
 receive state 
 receive Ants 
-send to Ant [(28, 5), 4, (28, 6), 4]
-[(28, 5), 4, (28, 6), 4]
+send to Ant [(28, 20), 0, (28, 19), 0]
+[(28, 20), 0, (28, 19), 0]
+turn 29
+receive state 
+receive Ants 
+send to Ant [(28, 20), 0, (28, 19), 0]
+[(28, 20), 0, (28, 19), 0]
+turn 30
+receive state 
+receive Ants 
+send to Ant [(28, 20), 0, (28, 19), 0]
+[(28, 20), 0, (28, 19), 0]
+turn 31
+receive state 
+receive Ants 
+send to Ant [(28, 20), 0, (28, 19), 0]
+[(28, 20), 0, (28, 19), 0]
+turn 32
+receive state 
+receive Ants 
+send to Ant [(28, 20), 0, (28, 19), 0]
+[(28, 20), 0, (28, 19), 0]
+turn 33
+receive state 
+receive Ants 
+send to Ant [(28, 20), 0, (28, 19), 0]
+[(28, 20), 0, (28, 19), 0]
+turn 34
+receive state 
+receive Ants 
+send to Ant [(28, 20), 0, (28, 19), 0]
+[(28, 20), 0, (28, 19), 0]
+turn 35
+receive state 
+receive Ants 
+send to Ant [(28, 20), 0, (28, 19), 0]
+[(28, 20), 0, (28, 19), 0]
+turn 36
+receive state 
+receive Ants 
+send to Ant [(28, 20), 0, (28, 19), 0]
+[(28, 20), 0, (28, 19), 0]
+turn 37
+receive state 
+receive Ants 
+send to Ant [(28, 20), 0, (28, 19), 0]
+[(28, 20), 0, (28, 19), 0]
+turn 38
+receive state 
+receive Ants 
+send to Ant [(28, 20), 0, (28, 19), 0]
+[(28, 20), 0, (28, 19), 0]
+turn 39
+receive state 
+receive Ants 
+send to Ant [(28, 20), 0, (28, 19), 0]
+[(28, 20), 0, (28, 19), 0]
+turn 40
+receive state 
+receive Ants 
+send to Ant [(28, 20), 0, (28, 19), 0]
+[(28, 20), 0, (28, 19), 0]
+turn 41
+receive state 
+receive Ants 
+send to Ant [(28, 20), 0, (28, 19), 0]
+[(28, 20), 0, (28, 19), 0]
+turn 42
+receive state 
+receive Ants 
+send to Ant [(28, 20), 0, (28, 19), 0]
+[(28, 20), 0, (28, 19), 0]
+turn 43
+receive state 
+receive Ants 
+send to Ant [(28, 20), 0, (28, 19), 0]
+[(28, 20), 0, (28, 19), 0]
+turn 44
+receive state 
+receive Ants 
+send to Ant [(28, 20), 0, (28, 19), 0]
+[(28, 20), 0, (28, 19), 0]
+turn 45
+receive state 
+receive Ants 
+send to Ant [(28, 20), 0, (28, 19), 0]
+[(28, 20), 0, (28, 19), 0]
+turn 46
+receive state 
+receive Ants 
+send to Ant [(28, 20), 0, (28, 19), 0]
+[(28, 20), 0, (28, 19), 0]
+turn 47
+receive state 
+receive Ants 
+send to Ant [(28, 20), 0, (28, 19), 0]
+[(28, 20), 0, (28, 19), 0]
+turn 48
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0, (28, 20), 0]
+[(28, 19), 0, (28, 20), 0]
+turn 49
+receive state 
+receive Ants 
+send to Ant [(28, 20), 0, (28, 19), 0]
+[(28, 20), 0, (28, 19), 0]
+turn 50
+receive state 
+receive Ants 
+send to Ant [(28, 20), 0, (28, 19), 0]
+[(28, 20), 0, (28, 19), 0]
+turn 51
+receive state 
+receive Ants 
+send to Ant [(28, 20), 0, (28, 19), 0]
+[(28, 20), 0, (28, 19), 0]
+turn 52
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0, (28, 20), 0]
+[(28, 19), 0, (28, 20), 0]
+turn 53
+receive state 
+receive Ants 
+send to Ant [(28, 20), 0, (28, 19), 0]
+[(28, 20), 0, (28, 19), 0]
+turn 54
+receive state 
+receive Ants 
+send to Ant [(28, 20), 0, (28, 19), 0]
+[(28, 20), 0, (28, 19), 0]
+turn 55
+receive state 
+receive Ants 
+send to Ant [(28, 20), 0, (28, 19), 0]
+[(28, 20), 0, (28, 19), 0]
+turn 56
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0, (28, 20), 0]
+[(28, 19), 0, (28, 20), 0]
+turn 57
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 58
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 59
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 60
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
 *************************************setup**************************************
 turn 1
 receive state 
+receive ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 2
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 3
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 4
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 5
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 6
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 7
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 8
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 9
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 10
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 11
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 12
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 13
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 14
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 15
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 16
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 17
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 18
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 19
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 20
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 21
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 22
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 23
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 24
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 25
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 26
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 27
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+*************************************setup**************************************
+turn 1
+receive state 
+receive ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 2
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 3
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 4
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 5
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 6
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 7
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 8
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 9
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 10
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 11
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 12
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 13
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 14
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 15
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 16
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 17
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 18
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 19
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 20
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 21
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 22
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 23
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 24
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 25
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 26
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 27
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 28
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 29
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 30
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 31
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 32
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 33
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 34
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 35
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 36
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 37
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 38
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 39
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 40
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 41
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 42
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 43
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 44
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 45
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 46
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 47
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 48
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 49
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 50
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 51
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 52
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 53
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 54
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 55
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 56
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 57
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 58
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+*************************************setup**************************************
+turn 1
+receive state 
+receive exception in reset
+*************************************setup**************************************
+turn 1
+receive state 
+receive exception in reset
+*************************************setup**************************************
+turn 1
+receive state 
+receive ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 2
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 3
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 4
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 5
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 6
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 7
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 8
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 9
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 10
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 11
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 12
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 13
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 14
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 15
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 16
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 17
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 18
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 19
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 20
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 21
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 22
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 23
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 24
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 25
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 26
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 27
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 28
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 29
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 30
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 31
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 32
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 33
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 34
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 35
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 36
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 37
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 38
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 39
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 40
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 41
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 42
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 43
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 44
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 45
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
+turn 46
+receive state 
+receive Ants 
+send to Ant [(28, 19), 0]
+[(28, 19), 0]
