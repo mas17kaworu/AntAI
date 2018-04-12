@@ -1,0 +1,274 @@
+*************************************setup**************************************
+turn 1
+receive state 
+receive Ants 
+send to Ant [(28, 19), 1]
+[(28, 19), 1]
+turn 2
+receive state 
+receive Ants 
+send to Ant [(27, 19), 4]
+[(27, 19), 4]
+turn 3
+receive state 
+receive Ants 
+send to Ant [(27, 18), 4, (28, 19), 4]
+[(27, 18), 4, (28, 19), 4]
+turn 4
+receive state 
+receive Ants 
+send to Ant [(28, 18), 4, (27, 17), 4]
+[(28, 18), 4, (27, 17), 4]
+turn 5
+receive state 
+receive Ants 
+send to Ant [(27, 16), 4, (28, 17), 4, (28, 19), 4]
+[(27, 16), 4, (28, 17), 4, (28, 19), 4]
+turn 6
+receive state 
+receive Ants 
+send to Ant [(27, 15), 4, (28, 18), 4, (28, 16), 4]
+[(27, 15), 4, (28, 18), 4, (28, 16), 4]
+turn 7
+receive state 
+receive Ants 
+send to Ant [(28, 15), 4, (28, 17), 4, (27, 14), 4]
+[(28, 15), 4, (28, 17), 4, (27, 14), 4]
+turn 8
+receive state 
+receive Ants 
+send to Ant [(28, 16), 4, (28, 14), 4, (27, 13), 4]
+[(28, 16), 4, (28, 14), 4, (27, 13), 4]
+turn 9
+receive state 
+receive Ants 
+send to Ant [(28, 13), 4, (28, 15), 4, (27, 12), 4]
+[(28, 13), 4, (28, 15), 4, (27, 12), 4]
+turn 10
+receive state 
+receive Ants 
+send to Ant [(28, 12), 4, (27, 11), 4, (28, 14), 4]
+[(28, 12), 4, (27, 11), 4, (28, 14), 4]
+turn 11
+receive state 
+receive Ants 
+send to Ant [(28, 13), 4, (27, 10), 4, (28, 11), 4]
+[(28, 13), 4, (27, 10), 4, (28, 11), 4]
+turn 12
+receive state 
+receive Ants 
+send to Ant [(28, 10), 4, (27, 9), 4, (28, 12), 4]
+[(28, 10), 4, (27, 9), 4, (28, 12), 4]
+turn 13
+receive state 
+receive Ants 
+send to Ant [(27, 8), 4, (28, 9), 4, (28, 11), 4]
+[(27, 8), 4, (28, 9), 4, (28, 11), 4]
+turn 14
+receive state 
+receive Ants 
+send to Ant [(27, 7), 4, (28, 10), 4, (28, 8), 4]
+[(27, 7), 4, (28, 10), 4, (28, 8), 4]
+turn 15
+receive state 
+receive Ants 
+send to Ant [(28, 7), 4, (28, 9), 4, (27, 6), 4]
+[(28, 7), 4, (28, 9), 4, (27, 6), 4]
+turn 16
+receive state 
+receive Ants 
+send to Ant [(28, 8), 4, (28, 6), 4, (27, 5), 4]
+[(28, 8), 4, (28, 6), 4, (27, 5), 4]
+turn 17
+receive state 
+receive Ants 
+send to Ant [(28, 5), 0, (28, 7), 0, (27, 5), 0]
+[(28, 5), 0, (28, 7), 0, (27, 5), 0]
+turn 18
+receive state 
+receive Ants 
+send to Ant [(28, 5), 0, (28, 7), 0, (27, 5), 0]
+[(28, 5), 0, (28, 7), 0, (27, 5), 0]
+turn 19
+receive state 
+receive Ants 
+send to Ant [(28, 5), 4, (28, 7), 4, (27, 5), 4]
+[(28, 5), 4, (28, 7), 4, (27, 5), 4]
+turn 20
+receive state 
+receive Ants 
+send to Ant [(28, 5), 4, (28, 6), 4, (27, 5), 4]
+[(28, 5), 4, (28, 6), 4, (27, 5), 4]
+turn 21
+receive state 
+receive Ants 
+send to Ant [(27, 5), 4]
+[(27, 5), 4]
+turn 22
+receive state 
+receive Ants 
+send to Ant [(27, 5), 4]
+[(27, 5), 4]
+turn 23
+receive state 
+receive Ants 
+send to Ant [(27, 5), 4]
+[(27, 5), 4]
+turn 24
+receive state 
+receive Ants 
+send to Ant [(27, 5), 4]
+[(27, 5), 4]
+turn 25
+receive state 
+receive Ants 
+send to Ant [(27, 5), 4]
+[(27, 5), 4]
+turn 26
+receive state 
+receive Ants 
+send to Ant [(27, 5), 4]
+[(27, 5), 4]
+turn 27
+receive state 
+receive Ants 
+send to Ant [(27, 5), 4]
+[(27, 5), 4]
+turn 28
+receive state 
+receive Ants 
+send to Ant [(27, 5), 4]
+[(27, 5), 4]
+turn 29
+receive state 
+receive Ants 
+send to Ant [(27, 5), 4]
+[(27, 5), 4]
+turn 30
+receive state 
+receive Ants 
+send to Ant [(27, 5), 4]
+[(27, 5), 4]
+turn 31
+receive state 
+receive Ants 
+send to Ant [(27, 5), 4]
+[(27, 5), 4]
+turn 32
+receive state 
+receive Ants 
+send to Ant [(27, 5), 4]
+[(27, 5), 4]
+turn 33
+receive state 
+receive Ants 
+send to Ant [(27, 5), 4]
+[(27, 5), 4]
+turn 34
+receive state 
+receive Ants 
+send to Ant [(27, 5), 4]
+[(27, 5), 4]
+turn 35
+receive state 
+receive Ants 
+send to Ant [(27, 5), 4]
+[(27, 5), 4]
+turn 36
+receive state 
+receive Ants 
+send to Ant [(27, 5), 4]
+[(27, 5), 4]
+turn 37
+receive state 
+receive Ants 
+send to Ant [(27, 5), 4]
+[(27, 5), 4]
+turn 38
+receive state 
+receive Ants 
+send to Ant [(27, 5), 4]
+[(27, 5), 4]
+turn 39
+receive state 
+receive Ants 
+send to Ant [(27, 5), 4]
+[(27, 5), 4]
+turn 40
+receive state 
+receive Ants 
+send to Ant [(27, 5), 4]
+[(27, 5), 4]
+turn 41
+receive state 
+receive Ants 
+send to Ant [(27, 5), 4]
+[(27, 5), 4]
+turn 42
+receive state 
+receive Ants 
+send to Ant [(27, 5), 4]
+[(27, 5), 4]
+turn 43
+receive state 
+receive Ants 
+send to Ant [(27, 5), 4]
+[(27, 5), 4]
+turn 44
+receive state 
+receive Ants 
+send to Ant [(27, 5), 4]
+[(27, 5), 4]
+turn 45
+receive state 
+receive Ants 
+send to Ant [(27, 5), 4]
+[(27, 5), 4]
+turn 46
+receive state 
+receive Ants 
+send to Ant [(27, 5), 4]
+[(27, 5), 4]
+turn 47
+receive state 
+receive Ants 
+send to Ant [(27, 5), 4]
+[(27, 5), 4]
+turn 48
+receive state 
+receive Ants 
+send to Ant [(27, 5), 4]
+[(27, 5), 4]
+turn 49
+receive state 
+receive Ants 
+send to Ant [(27, 5), 4]
+[(27, 5), 4]
+turn 50
+receive state 
+receive Ants 
+send to Ant [(27, 5), 4]
+[(27, 5), 4]
+turn 51
+receive state 
+receive Ants 
+send to Ant [(27, 5), 4]
+[(27, 5), 4]
+turn 52
+receive state 
+receive Ants 
+send to Ant [(27, 5), 4]
+[(27, 5), 4]
+turn 53
+receive state 
+receive Ants 
+send to Ant [(27, 5), 4]
+[(27, 5), 4]
+turn 54
+receive state 
+receive Ants 
+send to Ant [(27, 5), 4]
+[(27, 5), 4]
+*************************************setup**************************************
+turn 1
+receive state 

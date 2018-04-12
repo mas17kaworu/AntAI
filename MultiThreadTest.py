@@ -7,10 +7,10 @@ GLOBAL_NET_SCOPE = 'global_net'
 UPDATE_GLOBAL_ITER = 1
 GAMMA = 0.9
 ENTROPY_BETA = 0.001
-LR_A = 0.0001    # learning rate for actor
-LR_C = 0.0001    # learning rate for critic
+LR_A = 0.00001    # learning rate for actor
+LR_C = 0.001    # learning rate for critic
 
-MAX_GLOBAL_EP = 3
+MAX_GLOBAL_EP = 12
 GLOBAL_RUNNING_R = []
 GLOBAL_EP = 0
 THREAD_NUM = 4
@@ -110,12 +110,12 @@ class Worker(object):
         buffer_s, buffer_a, buffer_r = [], [], []
         # for _ in range(1):
         while not(COORD.should_stop()) and (GLOBAL_EP < MAX_GLOBAL_EP):
-            state_map, ants_loc = self.env.reset()
+            state_map, ants_loc, Done = self.env.reset()
             state_map = state_map.flatten()
             # print("worker", self.task_index, "receive first state", state_map)
             steps_num = 1
             ep_r = 0
-            Done = False
+
             actions_queue = []
             while not Done:
                 # print('start a new step')
@@ -170,7 +170,8 @@ class Worker(object):
 
                 if Done:
                     GLOBAL_EP += 1
-                    print("worker ", self.task_name, " T_reward = ", ep_r)
+                    print("worker ", self.task_name, " T_reward = ", ep_r
+                          , "GLOBAL_EP = ", GLOBAL_EP)
 
             print('episode : finished')
 
@@ -186,7 +187,7 @@ if __name__ == "__main__":
         workers = []
         # Create Worker
         for i in range(THREAD_NUM):
-            i_name = 'W_%i' % i
+            i_name = 'W_%i' % (i + 1)
             workers.append(Worker(i_name, i, global_net))
 
     COORD = tf.train.Coordinator()

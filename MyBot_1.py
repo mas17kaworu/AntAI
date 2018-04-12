@@ -8,7 +8,7 @@ import antLog
 
 
 port_remote = 22029
-botMark = 'bot1'
+botMark = 'W_1'
 
 # define a class with a do_turn method
 # the Ants.run method will parse and update bot input
@@ -27,7 +27,7 @@ class MyBot:
     # the ants class is created and setup by the Ants.run method
     def do_setup(self, ants):
         print("In mybot1 setup")
-        # antLog.write_log("setup")
+        antLog.write_log("*************************************setup**************************************", botMark)
         t = threading.Thread(target=self.start_client, args=(port_remote,))
         t.start()
         # self.client.connect(("127.0.0.1", port))
@@ -38,7 +38,7 @@ class MyBot:
     def do_turn(self, ants):
         # loop through all my ants and try to give them orders
         # the ant_loc is an ant location tuple in (row, col) form
-        # antLog.write_log("do_turn")
+        antLog.write_log("turn %d" % self.test_num, botMark)
         self.queue.empty()
         # generate state for entire map
         map_state = [-2, -1]  # only for test
@@ -53,8 +53,8 @@ class MyBot:
 
         #  wait for actions
         self.test_num += 1
-        data_arr = self.queue.get(timeout=3)
-        # antLog.write_log(str(data_arr))
+        data_arr = self.queue.get(timeout=5)
+        antLog.write_log(str(data_arr), botMark)
         # waite to receive action
         for index in range(len(ants.my_ants())):
 
