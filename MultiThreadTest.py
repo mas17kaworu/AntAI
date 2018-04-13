@@ -5,15 +5,17 @@ import threading
 
 GLOBAL_NET_SCOPE = 'global_net'
 UPDATE_GLOBAL_ITER = 1
+
 GAMMA = 0.9
 ENTROPY_BETA = 0.001
-LR_A = 0.00001    # learning rate for actor
+LR_A = 0.00000001    # learning rate for actor
 LR_C = 0.00001    # learning rate for critic
 
-MAX_GLOBAL_EP = 12
+MAX_GLOBAL_EP = 100
 GLOBAL_RUNNING_R = []
 GLOBAL_EP = 0
 THREAD_NUM = 4
+SAVE_PER_EPISODE = 10
 
 env = EnvTest.AntEnv("-1")
 N_S = env.observation_space_shape
@@ -64,10 +66,10 @@ class ACNet(object):
     def _build_net(self, scope):
         w_init = tf.random_normal_initializer(0., .1)
         with tf.variable_scope('actor'):
-            l_a = tf.layers.dense(self.s, 5000, tf.nn.relu, kernel_initializer=w_init, name='la')
+            l_a = tf.layers.dense(self.s, 4000, tf.nn.relu6, kernel_initializer=w_init, name='la')
             a_prob = tf.layers.dense(l_a, N_A, tf.nn.softmax, kernel_initializer=w_init, name='ap')
         with tf.variable_scope('critic'):
-            l_c = tf.layers.dense(self.s, 5000, tf.nn.relu, kernel_initializer=w_init, name='lc')
+            l_c = tf.layers.dense(self.s, 4000, tf.nn.relu6, kernel_initializer=w_init, name='lc')
             v = tf.layers.dense(l_c, 1, kernel_initializer=w_init, name='v')  # state value
         a_params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope + '/actor')
         c_params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope + '/critic')
@@ -78,6 +80,7 @@ class ACNet(object):
         # print("s shape = ", s.shape)
         # print("prob", prob_weights)
         action = np.random.choice(range(prob_weights.shape[1]), p=prob_weights.ravel())  # select action w.r.t the actions prob
+
         return action
 
     def update_global(self, feed_dict):  # run by a local
@@ -99,7 +102,7 @@ class Worker(object):
         self.env = EnvTest.AntEnv(name)
         self.AC = ACNet(name, globalAC)
 
-    def work(self):
+    def work(self, saver):
         def get_ant_state(map_, loc_):
             map_extend = np.insert(map_, map_.shape, loc_)
             return map_extend  # only for test
@@ -111,7 +114,8 @@ class Worker(object):
         # for _ in range(1):
         while not(COORD.should_stop()) and (GLOBAL_EP < MAX_GLOBAL_EP):
             state_map, ants_loc, Done = self.env.reset()
-            state_map = state_map.flatten()
+            if not Done:
+                state_map = state_map.flatten()
             # print("worker", self.task_index, "receive first state", state_map)
             steps_num = 1
             ep_r = 0
@@ -132,9 +136,11 @@ class Worker(object):
 
                     buffer_a.append(action)
                     buffer_s.append(s_a)
+                # print("actions ", actions_queue)
                 state_map_, ants_loc_, reward, Done = self.env.step(actions_queue)
                 if not Done:
                     state_map_ = state_map_.flatten()
+                    reward = reward / len(actions_queue)
 
                 ep_r += reward
                 buffer_r.append(reward)
@@ -145,6 +151,8 @@ class Worker(object):
                     else:
                         extend_s_m_ = np.insert(state_map_, state_map_.shape, (0, 0))
                         v_s_ = SESS.run(self.AC.v, {self.AC.s: extend_s_m_[np.newaxis, :]})[0, 0]  # RNN? use s_a in one step
+                        # print("value from net ", v_s_)
+
                     buffer_v_target = []
                     for r in buffer_r[::-1]:  # reverse buffer r
                         v_s_ = r + GAMMA * v_s_
@@ -173,15 +181,21 @@ class Worker(object):
                     print("worker ", self.task_name, " T_reward = ", ep_r
                           , "GLOBAL_EP = ", GLOBAL_EP)
 
+            if GLOBAL_EP % SAVE_PER_EPISODE == 0 and self.task_name == 'W_1':
+                saver.save(SESS, model_path + '/model-' + str(GLOBAL_EP) + '.cptk')
+                print("Saved Model")
+
             print('episode : finished')
 
 
+load_model = False
+model_path = './model'
 
 if __name__ == "__main__":
     SESS = tf.Session()
 
     with tf.device("/cpu:0"):
-        opt_a = tf.train.RMSPropOptimizer(LR_A, name='RMSPropA')
+        opt_a = tf.train.RMSPropOptimizer(LR_A, name='RMSPropA')  #RMSPropOptimizer
         opt_c = tf.train.RMSPropOptimizer(LR_C, name='RMSPropC')
         global_net = ACNet(GLOBAL_NET_SCOPE)
         workers = []
@@ -190,12 +204,20 @@ if __name__ == "__main__":
             i_name = 'W_%i' % (i + 1)
             workers.append(Worker(i_name, i, global_net))
 
+        saver = tf.train.Saver(max_to_keep=1)
+
     COORD = tf.train.Coordinator()
-    SESS.run(tf.global_variables_initializer())
+
+    if load_model == True:
+        print('Loading Model...')
+        ckpt = tf.train.get_checkpoint_state(model_path)
+        saver.restore(SESS, ckpt.model_checkpoint_path)
+    else:
+        SESS.run(tf.global_variables_initializer())
 
     worker_threads = []
     for worker in workers:
-        job = lambda: worker.work()
+        job = lambda: worker.work(saver)
         t = threading.Thread(target=job)
         t.start()
         worker_threads.append(t)
