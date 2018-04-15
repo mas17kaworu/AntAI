@@ -40,16 +40,27 @@ class MyBot:
         # the ant_loc is an ant location tuple in (row, col) form
         antLog.write_log("turn %d" % self.test_num, botMark)
         self.queue.empty()
-        # generate state for entire map
-        map_state = [-2, -1]  # only for test
-        map_state.append(ants.map)
-        self.client.sendall(pickle.dumps(map_state))
 
-        # send Ants loc to Network
-        ants_loc = [-1, -2]
+        # generate state for entire map
+        # map_state = [-2, -1]  # only for test
+        # map_state.append(ants.map)
+        # # self.client.sendall(pickle.dumps(map_state))
+        #
+        # # send Ants loc to Network
+        # ants_loc = [-1, -2]
+        # for ant_loc in ants.my_ants():
+        #     ants_loc.append(ant_loc)
+        # self.client.sendall(pickle.dumps(ants_loc))
+        arraySend = [-2, -1]
+        arraySend.append(ants.map)
+        arraySend.append(-1)
+        arraySend.append(-2)
         for ant_loc in ants.my_ants():
-            ants_loc.append(ant_loc)
-        self.client.sendall(pickle.dumps(ants_loc))
+            arraySend.append(ant_loc)
+        self.client.sendall(pickle.dumps(arraySend))
+
+
+
 
         #  wait for actions
         self.test_num += 1

@@ -140,7 +140,7 @@ class Worker(object):
                 state_map_, ants_loc_, reward, Done = self.env.step(actions_queue)
                 if not Done:
                     state_map_ = state_map_.flatten()
-                    reward = reward / len(actions_queue)
+                    # reward = reward / len(actions_queue)
 
                 ep_r += reward
                 buffer_r.append(reward)

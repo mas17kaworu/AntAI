@@ -6,7 +6,7 @@ from queue import Queue
 import threading
 import antLog
 
-Start_play_command = 'C:\Python27\python tools/playgame.py "python %s" "python tools/sample_bots/python/HunterBot.py"  ' \
+Start_play_command = 'D:\Python27\python tools/playgame.py "python %s" "python tools/sample_bots/python/HunterBot.py"  ' \
                      '--map_file "tools/maps/example/tutorial1.map" --log_dir %s --turns 60 --scenario   --nolaunch' \
                      ' --player_seed 7  --turntime 5000 -e'
 # --verbose   --nolaunch
@@ -102,17 +102,17 @@ class AntEnv:
         try:
             self.connection, address = server.accept()
             while True:
-                received = self.connection.recv(32768)
+                received = self.connection.recv(65536)
                 if received is not None:
                     data_arr = pickle.loads(received)
                     if data_arr[0] == -2 and data_arr[1] == -1:
                         self.state_queue.empty()
-                        # print('got state:', data_arr)
-                        self.state_queue.put(data_arr[2:])
-                    if data_arr[0] == -1 and data_arr[1] == -2:
+                        # print('got state:')
+                        self.state_queue.put(data_arr[2])
+                    if data_arr[3] == -1 and data_arr[4] == -2:
                         self.ants_loc_queue.empty()
-                        # print('got ant:', data_arr)
-                        self.ants_loc_queue.put(data_arr[2:])
+                        # print('got ant:')
+                        self.ants_loc_queue.put(data_arr[5:])
         except Exception as err:
             self.DONE = True
             print('thread %s' % self.Env_name, err)
