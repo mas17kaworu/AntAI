@@ -20,7 +20,7 @@ PORT4 = 22041
 class AntEnv:
     def __init__(self, name):
         self.Env_name = name
-        self.observation_space_shape = 1677 + 2  # 43*39=1677
+        self.observation_space_shape = 1677   # 43*39=1677   +2
         self.action_space_num = 5  # Action space  # 0--stay 1--North 2--East 3--South 4--West
         cols = 20
         rows = 20

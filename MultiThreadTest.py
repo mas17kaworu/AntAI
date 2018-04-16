@@ -21,16 +21,19 @@ env = EnvTest.AntEnv("-1")
 N_S = env.observation_space_shape
 N_A = env.action_space_num
 
+N_S_ACTOR = 11 * 11
 
 class ACNet(object):
     def __init__(self, scope, global_net=None):
         if scope == GLOBAL_NET_SCOPE:  # get global network
             with tf.variable_scope(scope):
                 self.s = tf.placeholder(tf.float32, [None, N_S], 'S')
+                self.s_actor = tf.placeholder(tf.float32, [None, N_S_ACTOR], 'S_Actor')
                 self.a_params, self.c_params = self._build_net(scope)[-2:]
         else:
             with tf.variable_scope(scope):
                 self.s = tf.placeholder(tf.float32, [None, N_S], 'S')
+                self.s_actor = tf.placeholder(tf.float32, [None, N_S_ACTOR], 'S_Actor')
                 self.a_his = tf.placeholder(tf.int32, [None, ], 'A')  # Action history
                 self.v_target = tf.placeholder(tf.float32, [None, 1], 'Vtarget')
 
@@ -66,19 +69,19 @@ class ACNet(object):
     def _build_net(self, scope):
         w_init = tf.random_normal_initializer(0., .1)
         with tf.variable_scope('actor'):
-            l_a = tf.layers.dense(self.s, 4000, tf.nn.relu6, kernel_initializer=w_init, name='la')
-            l_a2 = tf.layers.dense(l_a, 4000, tf.nn.relu6, kernel_initializer=w_init, name='la2')
+            l_a = tf.layers.dense(self.s_actor, 200, tf.nn.relu6, kernel_initializer=w_init, name='la')
+            l_a2 = tf.layers.dense(l_a, 200, tf.nn.relu6, kernel_initializer=w_init, name='la2')
             a_prob = tf.layers.dense(l_a2, N_A, tf.nn.softmax, kernel_initializer=w_init, name='ap')
         with tf.variable_scope('critic'):
-            l_c = tf.layers.dense(self.s, 4000, tf.nn.relu6, kernel_initializer=w_init, name='lc')
-            l_c2 = tf.layers.dense(l_c, 4000, tf.nn.relu6, kernel_initializer=w_init, name='lc2')
+            l_c = tf.layers.dense(self.s, 2000, tf.nn.relu6, kernel_initializer=w_init, name='lc')
+            l_c2 = tf.layers.dense(l_c, 2000, tf.nn.relu6, kernel_initializer=w_init, name='lc2')
             v = tf.layers.dense(l_c2, 1, kernel_initializer=w_init, name='v')  # state value
         a_params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope + '/actor')
         c_params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope + '/critic')
         return a_prob, v, a_params, c_params
 
     def choose_action(self, s):  # run by a local
-        prob_weights = SESS.run(self.a_prob, feed_dict={self.s: s[np.newaxis, :]})
+        prob_weights = SESS.run(self.a_prob, feed_dict={self.s_actor: s[np.newaxis, :]})
         # print("s shape = ", s.shape)
         # print("prob", prob_weights)
         action = np.random.choice(range(prob_weights.shape[1]), p=prob_weights.ravel())  # select action w.r.t the actions prob
@@ -106,18 +109,34 @@ class Worker(object):
 
     def work(self, saver):
         def get_ant_state(map_, loc_):
-            map_extend = np.insert(map_, map_.shape, loc_)
-            return map_extend  # only for test
+            # print(map_.shape)
+            small_map = np.zeros((11, 11))
+            x = loc_[0] - 5
+            for n in range(11):
+                if x < 0:
+                    x = x + 43
+                elif x >= 43:
+                    x = x - 43
+                y = loc_[1] - 5
+                for m in range(11):
+                    if y < 0:
+                        y = y + 39
+                    elif y >= 39:
+                        y = y - 39
+                    #print('x=',x ,' y=',y)
+                    small_map[n][m] = map_[x][y]
+                    y += 1
+                x += 1
+            small_map = small_map.flatten()
+            return small_map  # only for test
 
         global GLOBAL_RUNNING_R, GLOBAL_EP
         print('Start Worker: ', self.task_index)
         total_step = 1
-        buffer_s, buffer_a, buffer_r = [], [], []
+        buffer_s_a, buffer_s, buffer_a, buffer_r = [], [], [], []
         # for _ in range(1):
         while not(COORD.should_stop()) and (GLOBAL_EP < MAX_GLOBAL_EP):
             state_map, ants_loc, Done = self.env.reset()
-            if not Done:
-                state_map = state_map.flatten()
             # print("worker", self.task_index, "receive first state", state_map)
             steps_num = 1
             ep_r = 0
@@ -137,21 +156,22 @@ class Worker(object):
                     actions_queue.append(action_nomal)
 
                     buffer_a.append(action)
-                    buffer_s.append(s_a)
+                    buffer_s_a.append(s_a)
                 # print("actions ", actions_queue)
                 state_map_, ants_loc_, reward, Done = self.env.step(actions_queue)
-                if not Done:
-                    state_map_ = state_map_.flatten()
+                # if not Done:
+                #     state_map_ = state_map_.flatten()
                     # reward = reward / len(actions_queue)
 
                 ep_r += reward
                 buffer_r.append(reward)
+                buffer_s.append(state_map.flatten())
                 # do update N-Network
                 if total_step % UPDATE_GLOBAL_ITER == 0 or Done:
                     if Done:
                         v_s_ = 0
                     else:
-                        extend_s_m_ = np.insert(state_map_, state_map_.shape, (0, 0))
+                        extend_s_m_ = state_map_.flatten()
                         v_s_ = SESS.run(self.AC.v, {self.AC.s: extend_s_m_[np.newaxis, :]})[0, 0]  # RNN? use s_a in one step
                         # print("value from net ", v_s_)
 
@@ -161,15 +181,16 @@ class Worker(object):
                         buffer_v_target.append(v_s_)
                     buffer_v_target.reverse()
 
-                    buffer_s, buffer_a, buffer_v_target = np.vstack(buffer_s), np.array(buffer_a), np.vstack(
+                    buffer_s_a, buffer_s, buffer_a, buffer_v_target = np.vstack(buffer_s_a), np.vstack(buffer_s), np.array(buffer_a), np.vstack(
                         buffer_v_target)
                     feed_dict = {
+                        self.AC.s_actor: buffer_s_a,
                         self.AC.s: buffer_s,
                         self.AC.a_his: buffer_a,
                         self.AC.v_target: buffer_v_target,
                     }
                     self.AC.update_global(feed_dict)
-                    buffer_s, buffer_a, buffer_r = [], [], []
+                    buffer_s_a, buffer_s, buffer_a, buffer_r = [], [], [], []
                     self.AC.pull_global()
 
                 actions_queue.clear()
