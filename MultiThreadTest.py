@@ -8,10 +8,10 @@ UPDATE_GLOBAL_ITER = 1
 
 GAMMA = 0.9
 ENTROPY_BETA = 0.001
-LR_A = 0.00000001    # learning rate for actor
-LR_C = 0.00001    # learning rate for critic
+LR_A = 0.001    # learning rate for actor
+LR_C = 0.001    # learning rate for critic
 
-MAX_GLOBAL_EP = 100
+MAX_GLOBAL_EP = 200
 GLOBAL_RUNNING_R = []
 GLOBAL_EP = 0
 THREAD_NUM = 4
@@ -67,10 +67,12 @@ class ACNet(object):
         w_init = tf.random_normal_initializer(0., .1)
         with tf.variable_scope('actor'):
             l_a = tf.layers.dense(self.s, 4000, tf.nn.relu6, kernel_initializer=w_init, name='la')
-            a_prob = tf.layers.dense(l_a, N_A, tf.nn.softmax, kernel_initializer=w_init, name='ap')
+            l_a2 = tf.layers.dense(l_a, 4000, tf.nn.relu6, kernel_initializer=w_init, name='la2')
+            a_prob = tf.layers.dense(l_a2, N_A, tf.nn.softmax, kernel_initializer=w_init, name='ap')
         with tf.variable_scope('critic'):
             l_c = tf.layers.dense(self.s, 4000, tf.nn.relu6, kernel_initializer=w_init, name='lc')
-            v = tf.layers.dense(l_c, 1, kernel_initializer=w_init, name='v')  # state value
+            l_c2 = tf.layers.dense(l_c, 4000, tf.nn.relu6, kernel_initializer=w_init, name='lc2')
+            v = tf.layers.dense(l_c2, 1, kernel_initializer=w_init, name='v')  # state value
         a_params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope + '/actor')
         c_params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope + '/critic')
         return a_prob, v, a_params, c_params

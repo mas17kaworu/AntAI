@@ -7,11 +7,13 @@ from collections import defaultdict
 from math import sqrt
 
 MY_ANT = 0
-ANTS = 0
-DEAD = -1
-LAND = -2
-FOOD = -3
-WATER = -4
+DEAD = -10
+LAND = -20
+FOOD = -30
+WATER = -40
+UNKNOWN = -50
+HILL = 20
+
 
 # LAND = 0
 # HILL_MINE = 10
@@ -147,6 +149,7 @@ class Ants():
                             self.dead_list[(row, col)].append(owner)
                         elif tokens[0] == 'h':
                             owner = int(tokens[3])
+                            self.map[row][col] = HILL + owner
                             self.hill_list[(row, col)] = owner
                         
     def time_remaining(self):

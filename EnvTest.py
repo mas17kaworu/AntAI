@@ -24,7 +24,7 @@ class AntEnv:
         self.action_space_num = 5  # Action space  # 0--stay 1--North 2--East 3--South 4--West
         cols = 20
         rows = 20
-        self.stepNum = 0
+        self.stepNum = 1
         self.DONE = False
         self.state = [0 for _ in range(cols*rows)]
         self.s1 = np.array(self.state)
@@ -34,6 +34,7 @@ class AntEnv:
 
     def reset(self):
         command = ''
+        self.stepNum = 1
         self.DONE = False
         self.state_queue.empty()
         self.ants_loc_queue.empty()
@@ -89,7 +90,8 @@ class AntEnv:
             self.DONE = True
         # print("next_ants = ", next_ants)
         if not self.DONE:
-            reward = len(next_ants) - len(actions)
+            reward = len(next_ants) / self.stepNum
+            self.stepNum += 1
         else:
             reward = 0
         # send action to ant
