@@ -6,7 +6,7 @@ from queue import Queue
 import threading
 import antLog
 
-Start_play_command = 'D:\Python27\python tools/playgame.py "python %s" "python tools/sample_bots/python/HunterBot.py"  ' \
+Start_play_command = 'C:\Python27\python tools/playgame.py "python %s" "python tools/sample_bots/python/HunterBot.py"  ' \
                      '--map_file "tools/maps/example/tutorial1.map" --log_dir %s --turns 60 --scenario   --nolaunch' \
                      ' --player_seed 7  --turntime 5000 -e'
 # --verbose   --nolaunch

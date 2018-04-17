@@ -4,7 +4,7 @@ import EnvTest
 import threading
 
 GLOBAL_NET_SCOPE = 'global_net'
-UPDATE_GLOBAL_ITER = 1
+UPDATE_GLOBAL_ITER = 5
 
 GAMMA = 0.9
 ENTROPY_BETA = 0.001
@@ -66,12 +66,12 @@ class ACNet(object):
     def _build_net(self, scope):
         w_init = tf.random_normal_initializer(0., .1)
         with tf.variable_scope('actor'):
-            l_a = tf.layers.dense(self.s, 4000, tf.nn.relu6, kernel_initializer=w_init, name='la')
-            l_a2 = tf.layers.dense(l_a, 4000, tf.nn.relu6, kernel_initializer=w_init, name='la2')
+            l_a = tf.layers.dense(self.s, 3000, tf.nn.relu6, kernel_initializer=w_init, name='la')
+            l_a2 = tf.layers.dense(l_a, 3000, tf.nn.relu6, kernel_initializer=w_init, name='la2')
             a_prob = tf.layers.dense(l_a2, N_A, tf.nn.softmax, kernel_initializer=w_init, name='ap')
         with tf.variable_scope('critic'):
-            l_c = tf.layers.dense(self.s, 4000, tf.nn.relu6, kernel_initializer=w_init, name='lc')
-            l_c2 = tf.layers.dense(l_c, 4000, tf.nn.relu6, kernel_initializer=w_init, name='lc2')
+            l_c = tf.layers.dense(self.s, 3000, tf.nn.relu6, kernel_initializer=w_init, name='lc')
+            l_c2 = tf.layers.dense(l_c, 3000, tf.nn.relu6, kernel_initializer=w_init, name='lc2')
             v = tf.layers.dense(l_c2, 1, kernel_initializer=w_init, name='v')  # state value
         a_params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope + '/actor')
         c_params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope + '/critic')
@@ -111,7 +111,6 @@ class Worker(object):
 
         global GLOBAL_RUNNING_R, GLOBAL_EP
         print('Start Worker: ', self.task_index)
-        total_step = 1
         buffer_s, buffer_a, buffer_r = [], [], []
         # for _ in range(1):
         while not(COORD.should_stop()) and (GLOBAL_EP < MAX_GLOBAL_EP):
@@ -123,8 +122,10 @@ class Worker(object):
             ep_r = 0
 
             actions_queue = []
+            ant_amount_queue = []
             while not Done:
                 # print('start a new step')
+                ant_amount_queue.append(len(ants_loc))
                 for loc in ants_loc:
                     # get state for each ant
                     s_a = get_ant_state(state_map, loc)
@@ -147,7 +148,7 @@ class Worker(object):
                 ep_r += reward
                 buffer_r.append(reward)
                 # do update N-Network
-                if total_step % UPDATE_GLOBAL_ITER == 0 or Done:
+                if steps_num % UPDATE_GLOBAL_ITER == 0 or Done:
                     if Done:
                         v_s_ = 0
                     else:
@@ -156,10 +157,14 @@ class Worker(object):
                         # print("value from net ", v_s_)
 
                     buffer_v_target = []
+                    i_tmp = len(buffer_r)
                     for r in buffer_r[::-1]:  # reverse buffer r
                         v_s_ = r + GAMMA * v_s_
-                        buffer_v_target.append(v_s_)
+                        for _ in range(ant_amount_queue[i_tmp-1]):
+                            buffer_v_target.append(v_s_)
+                        i_tmp -= 1
                     buffer_v_target.reverse()
+                    ant_amount_queue = []
 
                     buffer_s, buffer_a, buffer_v_target = np.vstack(buffer_s), np.array(buffer_a), np.vstack(
                         buffer_v_target)
