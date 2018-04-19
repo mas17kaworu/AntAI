@@ -90,7 +90,13 @@ class AntEnv:
             self.DONE = True
         # print("next_ants = ", next_ants)
         if not self.DONE:
-            reward = len(next_ants) / self.stepNum
+            increase = len(next_ants) - len(actions)
+            if increase == 0:
+                reward = 1
+            elif increase > 0:
+                reward = increase * 3
+            elif increase < 0:
+                reward = increase * -2
             self.stepNum += 1
         else:
             reward = 0

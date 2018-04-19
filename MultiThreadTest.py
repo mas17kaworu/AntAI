@@ -8,12 +8,12 @@ import antLog
 GLOBAL_NET_SCOPE = 'global_net'
 UPDATE_GLOBAL_ITER = 1
 
-GAMMA = 0.9
+GAMMA = 0.95
 ENTROPY_BETA = 0.001
-LR_A = 0.000000000001    # learning rate for actor
-LR_C = 0.000000000001    # learning rate for critic
+LR_A = 0.0000000001    # learning rate for actor
+LR_C = 0.0000000001    # learning rate for critic
 
-MAX_GLOBAL_EP = 100
+MAX_GLOBAL_EP = 200
 GLOBAL_RUNNING_R = []
 GLOBAL_EP = 0
 THREAD_NUM = 4
@@ -44,7 +44,7 @@ class ACNet(object):
                 td = tf.subtract(self.v_target, self.v, name='TD_error')
                 with tf.name_scope('c_loss'):
                     self.c_loss = tf.reduce_mean(tf.square(td))
-
+                # tf.summary.scalar('c_loss', self.c_loss)
                 with tf.name_scope('a_loss'):
                     log_prob = tf.reduce_sum(
                         tf.log(tf.clip_by_value(self.a_prob, 1e-8, 1.0)) * tf.one_hot(self.a_his, N_A, dtype=tf.float32),
@@ -54,6 +54,7 @@ class ACNet(object):
                                              axis=1, keepdims=True)  # encourage exploration
                     self.exp_v = ENTROPY_BETA * entropy + exp_v
                     self.a_loss = tf.reduce_mean(-self.exp_v)
+                # tf.summary.scalar('a_loss', self.a_loss)
 
                 with tf.name_scope('local_grad'):
                     self.a_grads = tf.gradients(self.a_loss, self.a_params)
@@ -72,27 +73,43 @@ class ACNet(object):
         w_init = tf.random_normal_initializer(0., .1)
         with tf.variable_scope('actor'):
             image_in = tf.reshape(self.s_actor, [-1, 11, 11, 1])
-            conv_1 = slim.conv2d(activation_fn=tf.nn.elu,
+            conv_a1 = slim.conv2d(activation_fn=tf.nn.elu,
                                  inputs=image_in,
                                  num_outputs=16,
                                  kernel_size=[5, 5],
-                                 stride=[2, 2])
-            conv_2 = slim.conv2d(activation_fn=tf.nn.elu,
-                                 inputs=conv_1,
+                                 stride=[1, 1])
+
+            conv_a2 = slim.conv2d(activation_fn=tf.nn.elu,
+                                 inputs=conv_a1,
                                  num_outputs=32,
                                  kernel_size=[5, 5],
-                                 stride=[2, 2])
-            hidden = slim.fully_connected(slim.flatten(conv_2), 256, activation_fn=tf.nn.elu)
+                                 stride=[1, 1])
+            hidden_a = slim.fully_connected(slim.flatten(conv_a2), 256, activation_fn=tf.nn.elu)
 
-            a_prob = slim.fully_connected(hidden, N_A, activation_fn=tf.nn.softmax)
+            a_prob = slim.fully_connected(hidden_a, N_A, activation_fn=tf.nn.softmax)
 
             # l_a = tf.layers.dense(self.s_actor, 200, tf.nn.relu6, kernel_initializer=w_init, name='la')
             # l_a2 = tf.layers.dense(l_a, 200, tf.nn.relu6, kernel_initializer=w_init, name='la2')
             # a_prob = tf.layers.dense(l_a2, N_A, tf.nn.softmax, kernel_initializer=w_init, name='ap')
         with tf.variable_scope('critic'):
-            l_c = tf.layers.dense(self.s, 2000, tf.nn.relu6, kernel_initializer=w_init, name='lc')
-            l_c2 = tf.layers.dense(l_c, 2000, tf.nn.relu6, kernel_initializer=w_init, name='lc2')
-            v = tf.layers.dense(l_c2, 1, kernel_initializer=w_init, name='v')  # state value
+            map_state_in = tf.reshape(self.s, [-1, 43, 39, 1])
+            conv_c1 = slim.conv2d(activation_fn=tf.nn.elu,
+                                  inputs=map_state_in,
+                                  num_outputs=16,
+                                  kernel_size=[5, 5],
+                                  stride=[1, 1])
+            conv_c2 = slim.conv2d(activation_fn=tf.nn.elu,
+                                  inputs=conv_c1,
+                                  num_outputs=32,
+                                  kernel_size=[4, 4],
+                                  stride=[1, 1])
+
+            hidden_c = slim.fully_connected(conv_c2, 5000, activation_fn=tf.nn.relu)
+            v = slim.fully_connected(hidden_c, 1)
+
+            # l_c = tf.layers.dense(self.s, 2000, tf.nn.relu6, kernel_initializer=w_init, name='lc')
+            # l_c2 = tf.layers.dense(l_c, 2000, tf.nn.relu6, kernel_initializer=w_init, name='lc2')
+            # v = tf.layers.dense(l_c2, 1, kernel_initializer=w_init, name='v')  # state value
         a_params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope + '/actor')
         c_params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope + '/critic')
         return a_prob, v, a_params, c_params
@@ -206,6 +223,11 @@ class Worker(object):
                         self.AC.a_his: buffer_a,
                         self.AC.v_target: buffer_v_target,
                     }
+                    if self.task_index == 1 and steps_num % 5 == 0:
+                        a_loss = SESS.run(self.AC.a_loss, feed_dict)
+                        c_loss = SESS.run(self.AC.c_loss, feed_dict)
+                        antLog.write_log("a_loss = %f c_loss = %f" % (a_loss, c_loss), "Total")
+
                     self.AC.update_global(feed_dict)
                     buffer_s_a, buffer_s, buffer_a, buffer_r = [], [], [], []
                     self.AC.pull_global()
@@ -249,6 +271,8 @@ if __name__ == "__main__":
 
     COORD = tf.train.Coordinator()
 
+    merged = tf.summary.merge_all()
+    writer = tf.summary.FileWriter("logs/", SESS.graph)
     if load_model == True:
         print('Loading Model...')
         ckpt = tf.train.get_checkpoint_state(model_path)
