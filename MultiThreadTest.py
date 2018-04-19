@@ -4,12 +4,12 @@ import EnvTest
 import threading
 
 GLOBAL_NET_SCOPE = 'global_net'
-UPDATE_GLOBAL_ITER = 5
+UPDATE_GLOBAL_ITER = 2
 
 GAMMA = 0.9
 ENTROPY_BETA = 0.001
-LR_A = 0.001    # learning rate for actor
-LR_C = 0.001    # learning rate for critic
+LR_A = 0.0000001    # learning rate for actor
+LR_C = 0.0000001    # learning rate for critic
 
 MAX_GLOBAL_EP = 200
 GLOBAL_RUNNING_R = []
@@ -40,6 +40,7 @@ class ACNet(object):
                 with tf.name_scope('c_loss'):
                     self.c_loss = tf.reduce_mean(tf.square(td))
 
+                tf.summary.scalar('loss_c', self.c_loss)
                 with tf.name_scope('a_loss'):
                     log_prob = tf.reduce_sum(
                         tf.log(tf.clip_by_value(self.a_prob, 1e-8, 1.0)) * tf.one_hot(self.a_his, N_A, dtype=tf.float32),
@@ -50,6 +51,7 @@ class ACNet(object):
                     self.exp_v = ENTROPY_BETA * entropy + exp_v
                     self.a_loss = tf.reduce_mean(-self.exp_v)
 
+                tf.summary.scalar('loss_a', self.a_loss)
                 with tf.name_scope('local_grad'):
                     self.a_grads = tf.gradients(self.a_loss, self.a_params)
                     self.c_grads = tf.gradients(self.c_loss, self.c_params)
@@ -173,9 +175,20 @@ class Worker(object):
                         self.AC.a_his: buffer_a,
                         self.AC.v_target: buffer_v_target,
                     }
+
+                    # if steps_num % 4 == 0:
+                    #     result = SESS.run(merged, feed_dict={
+                    #         self.AC.s: buffer_s,
+                    #         self.AC.a_his: buffer_a,
+                    #         self.AC.v_target: buffer_v_target,
+                    #     })
+                    #     writer.add_summary(result, steps_num)
+
                     self.AC.update_global(feed_dict)
                     buffer_s, buffer_a, buffer_r = [], [], []
                     self.AC.pull_global()
+
+
 
                 actions_queue.clear()
                 steps_num += 1
@@ -222,6 +235,8 @@ if __name__ == "__main__":
     else:
         SESS.run(tf.global_variables_initializer())
 
+    # merged = tf.summary.merge_all()
+    writer = tf.summary.FileWriter("logs/", SESS.graph)
     worker_threads = []
     for worker in workers:
         job = lambda: worker.work(saver)
