@@ -6,7 +6,7 @@ from queue import Queue
 import threading
 import antLog
 
-Start_play_command = 'D:\Python27\python tools/playgame.py "python %s" "python tools/sample_bots/python/HunterBot.py"  ' \
+Start_play_command = 'C:\Python27\python tools/playgame.py "python %s" "python tools/sample_bots/python/HunterBot.py"  ' \
                      '--map_file "tools/maps/example/tutorial1.map" --log_dir %s --turns 60 --scenario   --nolaunch' \
                      ' --player_seed 7  --turntime 5000 -e'
 # --verbose   --nolaunch
@@ -15,6 +15,7 @@ PORT1 = 22029
 PORT2 = 22040
 PORT3 = 22038
 PORT4 = 22041
+
 
 
 class AntEnv:
@@ -29,6 +30,7 @@ class AntEnv:
         self.state = [0 for _ in range(cols*rows)]
         self.s1 = np.array(self.state)
         self.ants_loc_queue = Queue()
+        self.ants_loc_list = []
         self.state_queue = Queue()
         self.connection = None
 
@@ -60,19 +62,19 @@ class AntEnv:
             print("Bot4 reStart")
         os.popen(command)
         tmp_state = []
-        tmp_ants = []
+        self.ants_loc_list = []
         try:
             tmp_state = self.state_queue.get(block=True, timeout=5)
             tmp_state = np.array(tmp_state)
             antLog.write_log('receive state ', self.Env_name)
-            tmp_ants = self.ants_loc_queue.get(block=True, timeout=6)
+            self.ants_loc_list = self.ants_loc_queue.get(block=True, timeout=6)
             antLog.write_log('receive ants ', self.Env_name)
         except Exception as err:
             self.connection.close
             antLog.write_log('receive exception in reset', self.Env_name)
             self.DONE = True
 
-        return tmp_state, tmp_ants, self.DONE
+        return tmp_state, self.ants_loc_list, self.DONE
 
     def step(self, actions):
 
@@ -89,11 +91,22 @@ class AntEnv:
         except Exception as err:
             self.DONE = True
         # print("next_ants = ", next_ants)
+
         if not self.DONE:
-            reward = len(next_ants) / self.stepNum
+            increase = len(next_ants) - (len(actions)/2)
+            if increase == 0:
+                reward = 1
+            elif increase > 0:
+                reward = increase * 3
+            else:
+                reward = increase * 2
             self.stepNum += 1
         else:
             reward = 0
+
+        # ant_reward = self.generate_ant_reward(actions=actions, ants=self.ants_loc_list, map_state=next_state)
+
+        self.ants_loc_list = next_ants
         # send action to ant
         return next_state, next_ants, reward, self.DONE
 
@@ -121,6 +134,25 @@ class AntEnv:
         finally:
             self.connection.close()
 
+    def generate_ant_reward(self, actions, ants, map_state):
+        print("actions:", actions)
+        for i in range(len(ants)):
+            loc = actions[i]
+            act = actions[i + 1]
+            # s = 0
+            # if act == 0:
+            #     s = map_state[loc[0], loc[1]]
+            # elif act == 1:
+            #     s = map_state[loc[0], loc[1]-1]
+            # elif act == 2:
+            #     s = map_state[loc[0]+1, loc[1]]
+            # elif act == 3:
+            #     s = map_state[loc[0], loc[1]+1]
+            # elif act == 4:
+            #     s = map_state[loc[0]-1, loc[1]]
+
+
+        return 0
     # def step_for_ant(self, action, loc):
     #     output = [0, loc, action]
     #     test = bytes(output)

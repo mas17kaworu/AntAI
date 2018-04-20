@@ -9,7 +9,7 @@ GLOBAL_NET_SCOPE = 'global_net'
 UPDATE_GLOBAL_ITER = 1
 
 GAMMA = 0.9
-ENTROPY_BETA = 0.001
+ENTROPY_BETA = 1
 LR_A = 0.000000000001    # learning rate for actor
 LR_C = 0.000000000001    # learning rate for critic
 
@@ -41,19 +41,21 @@ class ACNet(object):
 
                 self.a_prob, self.v, self.a_params, self.c_params = self._build_net(scope)
 
-                td = tf.subtract(self.v_target, self.v, name='TD_error')
+                self.td = tf.subtract(self.v_target, self.v, name='TD_error')
                 with tf.name_scope('c_loss'):
-                    self.c_loss = tf.reduce_mean(tf.square(td))
+                    self.c_loss = tf.reduce_mean(tf.square(self.td))
 
                 with tf.name_scope('a_loss'):
                     log_prob = tf.reduce_sum(
                         tf.log(tf.clip_by_value(self.a_prob, 1e-8, 1.0)) * tf.one_hot(self.a_his, N_A, dtype=tf.float32),
                         axis=1, keepdims=True)
-                    exp_v = log_prob * tf.stop_gradient(td)
+                    exp_v = log_prob * tf.stop_gradient(self.td)
                     entropy = -tf.reduce_sum(self.a_prob * tf.log(self.a_prob + 1e-5),
                                              axis=1, keepdims=True)  # encourage exploration
                     self.exp_v = ENTROPY_BETA * entropy + exp_v
+
                     self.a_loss = tf.reduce_mean(-self.exp_v)
+                    # self.a_loss = tf.clip_by_value(tf.reduce_mean(-self.exp_v), -0.5, 0.5)  # clip a loss
 
                 with tf.name_scope('local_grad'):
                     self.a_grads = tf.gradients(self.a_loss, self.a_params)
@@ -176,6 +178,11 @@ class Worker(object):
                     buffer_s_a.append(s_a)
                 # print("actions ", actions_queue)
                 state_map_, ants_loc_, reward, Done = self.env.step(actions_queue)
+                if self.task_index == 0:
+                    antLog.write_log('reward = ' + str(reward), "Task1Summary")
+                # if self.task_index == 0:
+                    # print(reward)
+
                 # if not Done:
                 #     state_map_ = state_map_.flatten()
                     # reward = reward / len(actions_queue)
@@ -206,6 +213,13 @@ class Worker(object):
                         self.AC.a_his: buffer_a,
                         self.AC.v_target: buffer_v_target,
                     }
+                    if self.task_index == 0 and steps_num % 1 == 0:
+                        loss_a = SESS.run(self.AC.a_loss, feed_dict)
+                        loss_c = SESS.run(self.AC.c_loss, feed_dict)
+                        td = SESS.run(self.AC.td, feed_dict)
+                        antLog.write_log("loss_a = %f, loss_c = %f" % (loss_a, loss_c), "Task1Summary")
+                        antLog.write_log('td =' + str(td), "Task1Summary")
+
                     self.AC.update_global(feed_dict)
                     buffer_s_a, buffer_s, buffer_a, buffer_r = [], [], [], []
                     self.AC.pull_global()
