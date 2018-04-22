@@ -111,14 +111,15 @@ class AntEnv:
                 reward = increase * 2
             self.stepNum += 1
 
-            ant_rewards = self.generate_ant_reward(actions=actions, ants=self.ants_loc_list, map_state_next=next_state)
+            ant_rewards, loc_dict = self.generate_ant_reward(actions=actions, map_state_next=next_state)
         else:
-            reward = 0
+            loc_dict = {}
+            ant_rewards = 0
 
         self.ants_loc_list = next_ants
         self.state = next_state
         # send action to ant
-        return next_state, next_ants, reward, self.DONE
+        return next_state, next_ants, ant_rewards, self.DONE, loc_dict
 
     def start_server(self, port_num):
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -144,8 +145,9 @@ class AntEnv:
         finally:
             self.connection.close()
 
-    def generate_ant_reward(self, actions, ants, map_state_next):
-        print("actions:", actions)
+    def generate_ant_reward(self, actions, map_state_next):
+        # print("actions:", actions)
+        loc_dict = {}
         rewards = []
         i = 0
         for _ in range(int(len(actions) / 2)):
@@ -153,16 +155,20 @@ class AntEnv:
             loc = actions[i]
             act = actions[i + 1]
             next_loc = get_next_loc(act, loc)
+            loc_dict[loc] = loc
             if map_state_next[next_loc[0]][next_loc[1]] == MY_ANT:
                 reward = 1
+                loc_dict[loc] = next_loc
                 if self.has_eat_food(next_loc):
                     reward = 10
             elif map_state_next[next_loc[0]][next_loc[1]] == DEAD:
                 reward = -100
+                loc_dict[loc] = (-1, -1)
             i += 2
-            print(str(loc) + " reward = " + str(reward))
+            # print(str(loc) + " reward = " + str(reward))
+
             rewards.append(reward)
-        return rewards
+        return rewards, loc_dict
 
     def has_eat_food(self, next_loc):
         x, y = getCorrectCoord(next_loc[0] - 1, next_loc[1])

@@ -9,9 +9,9 @@ GLOBAL_NET_SCOPE = 'global_net'
 UPDATE_GLOBAL_ITER = 1
 
 GAMMA = 0.9
-ENTROPY_BETA = 0.1
-LR_A = 0.000000000001    # learning rate for actor
-LR_C = 0.000000000001    # learning rate for critic
+ENTROPY_BETA = 0.01
+LR_A = 0.00000001    # learning rate for actor
+LR_C = 0.00000001    # learning rate for critic
 
 MAX_GLOBAL_EP = 1
 GLOBAL_RUNNING_R = []
@@ -23,19 +23,24 @@ env = EnvTest.AntEnv("-1")
 N_S = env.observation_space_shape
 N_A = env.action_space_num
 
-N_S_ACTOR = 11 * 11
+SMALL_MAP_WIDTH = 11
+SMALL_MAP_HEIGHT = 11
+N_S_ACTOR = SMALL_MAP_WIDTH * SMALL_MAP_HEIGHT
+
+MAP_WIDTH = 43
+MAP_HEIGHT = 39
 
 class ACNet(object):
     def __init__(self, scope, global_net=None):
         if scope == GLOBAL_NET_SCOPE:  # get global network
             with tf.variable_scope(scope):
-                self.s = tf.placeholder(tf.float32, [None, N_S], 'S')
-                self.s_actor = tf.placeholder(tf.float32, [None, N_S_ACTOR], 'S_Actor')
+                self.s = tf.placeholder(tf.float32, [None, N_S_ACTOR], 'S')
+                # self.s_actor = tf.placeholder(tf.float32, [None, N_S_ACTOR], 'S_Actor')
                 self.a_params, self.c_params = self._build_net(scope)[-2:]
         else:
             with tf.variable_scope(scope):
-                self.s = tf.placeholder(tf.float32, [None, N_S], 'S')
-                self.s_actor = tf.placeholder(tf.float32, [None, N_S_ACTOR], 'S_Actor')
+                self.s = tf.placeholder(tf.float32, [None, N_S_ACTOR], 'S')
+                # self.s_actor = tf.placeholder(tf.float32, [None, N_S_ACTOR], 'S_Actor')
                 self.a_his = tf.placeholder(tf.int32, [None, ], 'A')  # Action history
                 self.v_target = tf.placeholder(tf.float32, [None, 1], 'Vtarget')
 
@@ -71,30 +76,35 @@ class ACNet(object):
                     self.update_c_op = opt_c.apply_gradients(zip(self.c_grads, global_net.c_params))
 
     def _build_net(self, scope):
-        w_init = tf.random_normal_initializer(0., .1)
+        w_init = tf.random_normal_initializer(0., 1.0)
         with tf.variable_scope('actor'):
-            image_in = tf.reshape(self.s_actor, [-1, 11, 11, 1])
+            image_in = tf.reshape(self.s_actor, [-1, SMALL_MAP_WIDTH, SMALL_MAP_HEIGHT, 1])
             conv_1 = slim.conv2d(activation_fn=tf.nn.elu,
                                  inputs=image_in,
-                                 num_outputs=16,
+                                 num_outputs=64,
                                  kernel_size=[5, 5],
                                  stride=[2, 2])
             conv_2 = slim.conv2d(activation_fn=tf.nn.elu,
                                  inputs=conv_1,
-                                 num_outputs=32,
+                                 num_outputs=128,
                                  kernel_size=[5, 5],
                                  stride=[2, 2])
-            hidden = slim.fully_connected(slim.flatten(conv_2), 256, activation_fn=tf.nn.elu)
+            after_cnn = slim.flatten(conv_2)
+            print(after_cnn)
+            hidden_a = slim.fully_connected(slim.flatten(conv_2), 1024, activation_fn=tf.nn.elu)
 
-            a_prob = slim.fully_connected(hidden, N_A, activation_fn=tf.nn.softmax)
+            a_prob = slim.fully_connected(hidden_a, N_A, activation_fn=tf.nn.softmax)
 
             # l_a = tf.layers.dense(self.s_actor, 200, tf.nn.relu6, kernel_initializer=w_init, name='la')
             # l_a2 = tf.layers.dense(l_a, 200, tf.nn.relu6, kernel_initializer=w_init, name='la2')
             # a_prob = tf.layers.dense(l_a2, N_A, tf.nn.softmax, kernel_initializer=w_init, name='ap')
         with tf.variable_scope('critic'):
-            l_c = tf.layers.dense(self.s, 2000, tf.nn.relu6, kernel_initializer=w_init, name='lc')
-            l_c2 = tf.layers.dense(l_c, 2000, tf.nn.relu6, kernel_initializer=w_init, name='lc2')
-            v = tf.layers.dense(l_c2, 1, kernel_initializer=w_init, name='v')  # state value
+            hidden_c = slim.fully_connected(slim.flatten(conv_2), 1024, activation_fn=tf.nn.elu)
+            v = tf.layers.dense(hidden_c, 1, kernel_initializer=w_init, name='v')  # state value
+
+            # l_c = tf.layers.dense(self.s, 2000, tf.nn.relu6, kernel_initializer=w_init, name='lc')
+            # l_c2 = tf.layers.dense(l_c, 2000, tf.nn.relu6, kernel_initializer=w_init, name='lc2')
+            # v = tf.layers.dense(l_c2, 1, kernel_initializer=w_init, name='v')  # state value
         a_params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope + '/actor')
         c_params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope + '/critic')
         return a_prob, v, a_params, c_params
@@ -125,19 +135,19 @@ class Worker(object):
         self.task_index = index
         self.env = EnvTest.AntEnv(name)
         self.AC = ACNet(name, globalAC)
-
+        self.ants = []
     def work(self, saver):
         def get_ant_state(map_, loc_):
             # print(map_.shape)
-            small_map = np.zeros((11, 11))
+            small_map = np.zeros((SMALL_MAP_HEIGHT, SMALL_MAP_WIDTH))
             x = loc_[0] - 5
-            for n in range(11):
+            for n in range(SMALL_MAP_HEIGHT):
                 if x < 0:
                     x = x + 43
                 elif x >= 43:
                     x = x - 43
                 y = loc_[1] - 5
-                for m in range(11):
+                for m in range(SMALL_MAP_WIDTH):
                     if y < 0:
                         y = y + 39
                     elif y >= 39:
@@ -153,51 +163,52 @@ class Worker(object):
         global GLOBAL_RUNNING_R, GLOBAL_EP
         print('Start Worker: ', self.task_index)
         total_step = 1
-        buffer_s_a, buffer_s, buffer_a, buffer_r = [], [], [], []
+        buffer_s, buffer_a, buffer_r = [], [], []
         # for _ in range(1):
         while not(COORD.should_stop()) and (GLOBAL_EP < MAX_GLOBAL_EP):
-            state_map, ants_loc, Done = self.env.reset()
+            state_map, ants_loc, game_done = self.env.reset()
             # print("worker", self.task_index, "receive first state", state_map)
             steps_num = 1
             ep_r = 0
-
             actions_queue = []
-            while not Done:
+            # self.ants = ants_loc
+            while not game_done:
                 # print('start a new step')
+                next_locs = []
                 for loc in ants_loc:
                     # get state for each ant
                     s_a = get_ant_state(state_map, loc)
                     # get action for each ant
                     action = self.AC.choose_action(s_a)
-                    # action = choose_action_only_for_test(s_a)
-
-                    action_nomal = action.tolist()
+                    action_normal = action.tolist()
                     actions_queue.append(loc)
-                    actions_queue.append(action_nomal)
-
+                    actions_queue.append(action_normal)
                     buffer_a.append(action)
-                    buffer_s_a.append(s_a)
+                    buffer_s.append(s_a)
                 # print("actions ", actions_queue)
-                state_map_, ants_loc_, reward, Done = self.env.step(actions_queue)
+                state_map_, ants_loc_, rewards, game_done, loc_dict = self.env.step(actions_queue)
                 if self.task_index == 0:
-                    antLog.write_log('reward = ' + str(reward), "Task1Summary")
-                # if self.task_index == 0:
-                    # print(reward)
+                    antLog.write_log('reward = ' + str(rewards), "Task1Summary")
+                i_tmp = 0
+                for loc in ants_loc:
+                    buffer_r.append(rewards[i])
+                    i_tmp += 1
 
-                # if not Done:
-                #     state_map_ = state_map_.flatten()
-                    # reward = reward / len(actions_queue)
-
-                ep_r += reward
-                buffer_r.append(reward)
-                buffer_s.append(state_map.flatten())
+                # ep_r += reward
                 # do update N-Network
-                if total_step % UPDATE_GLOBAL_ITER == 0 or Done:
-                    if Done:
-                        v_s_ = 0
+                if total_step % UPDATE_GLOBAL_ITER == 0 or game_done:
+                    buffer_s_next = []
+                    if game_done:
+                        v_s_ = 0  # all 0
                     else:
-                        extend_s_m_ = state_map_.flatten()
-                        v_s_ = SESS.run(self.AC.v, {self.AC.s: extend_s_m_[np.newaxis, :]})[0, 0]  # RNN? use s_a in one step
+                        i_tmp2 = 0
+                        for loc in ants_loc: # some Ants has dead
+                            if rewards[i_tmp2] == -100:  # dead ant
+                                s_a_ = np.zeros((SMALL_MAP_WIDTH, SMALL_MAP_HEIGHT))
+                            else:
+                                s_a_ = get_ant_state(state_map, loc_dict[loc])
+                        buffer_s_next.append(s_a_)
+                        v_s_ = SESS.run(self.AC.v, {self.AC.s: np.vstack(buffer_s_next)})  # RNN? use s_a in one step
                         # print("value from net ", v_s_)
 
                     buffer_v_target = []
@@ -206,10 +217,8 @@ class Worker(object):
                         buffer_v_target.append(v_s_)
                     buffer_v_target.reverse()
 
-                    buffer_s_a, buffer_s, buffer_a, buffer_v_target = np.vstack(buffer_s_a), np.vstack(buffer_s), np.array(buffer_a), np.vstack(
-                        buffer_v_target)
+                    buffer_s, buffer_a, buffer_v_target = np.vstack(buffer_s), np.array(buffer_a), np.vstack(buffer_v_target)
                     feed_dict = {
-                        self.AC.s_actor: buffer_s_a,
                         self.AC.s: buffer_s,
                         self.AC.a_his: buffer_a,
                         self.AC.v_target: buffer_v_target,
@@ -217,12 +226,12 @@ class Worker(object):
                     if self.task_index == 0 and steps_num % 1 == 0:
                         loss_a = SESS.run(self.AC.a_loss, feed_dict)
                         loss_c = SESS.run(self.AC.c_loss, feed_dict)
-                        td = SESS.run(self.AC.td, feed_dict)
+                        # td = SESS.run(self.AC.td, feed_dict)
                         antLog.write_log("loss_a = %f, loss_c = %f" % (loss_a, loss_c), "Task1Summary")
-                        antLog.write_log('td =' + str(td), "Task1Summary")
+                        # antLog.write_log('td =' + str(td), "Task1Summary")
 
                     self.AC.update_global(feed_dict)
-                    buffer_s_a, buffer_s, buffer_a, buffer_r = [], [], [], []
+                    buffer_s, buffer_a, buffer_r = [], [], []
                     self.AC.pull_global()
 
                 actions_queue.clear()
@@ -231,7 +240,7 @@ class Worker(object):
                 state_map = state_map_
                 ants_loc = ants_loc_
 
-                if Done:
+                if game_done:
                     GLOBAL_EP += 1
                     antLog.write_log(str(ep_r), "Total")
                     print("worker ", self.task_name, " T_reward = ", ep_r
@@ -278,3 +287,42 @@ if __name__ == "__main__":
         t.start()
         worker_threads.append(t)
     COORD.join(worker_threads)
+
+
+def get_next_loc(act, loc):
+    next_loc = (0, 0)
+    if act == 0:
+        next_loc = loc
+    elif act == 1:
+        next_loc = (loc[0] - 1, loc[1])
+    elif act == 2:
+        next_loc = (loc[0], loc[1] + 1)
+    elif act == 3:
+        next_loc = (loc[0] + 1, loc[1])
+    elif act == 4:
+        next_loc = (loc[0], loc[1] - 1)
+    x_,y_ = getCorrectCoord(next_loc[0], next_loc[1])
+    next_loc = (x_, y_)
+
+    # if next_loc[0] < 0:
+    #     next_loc = (MAP_HEIGHT + next_loc[0], next_loc[1])
+    # elif next_loc[0] >= MAP_HEIGHT:
+    #     next_loc = (next_loc[0] - MAP_HEIGHT, next_loc[1])
+    # if next_loc[1] < 0:
+    #     next_loc = (MAP_WIDTH + next_loc[0], next_loc[1])
+    # elif next_loc[1] >= MAP_WIDTH:
+    #     next_loc = (next_loc[0] - MAP_WIDTH, next_loc[1])
+    return next_loc
+
+def getCorrectCoord(x, y):
+    x_ = x
+    y_ = y
+    if x < 0:
+        x_ = MAP_HEIGHT + x
+    elif x >= MAP_HEIGHT:
+        x_ = x - MAP_HEIGHT
+    if y < 0:
+        y_ = MAP_WIDTH + y
+    elif y >= MAP_WIDTH:
+        y_ = y - MAP_WIDTH
+    return x_, y_
