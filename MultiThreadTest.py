@@ -9,14 +9,14 @@ GLOBAL_NET_SCOPE = 'global_net'
 UPDATE_GLOBAL_ITER = 1
 
 GAMMA = 0.9
-ENTROPY_BETA = 1
+ENTROPY_BETA = 0.1
 LR_A = 0.000000000001    # learning rate for actor
 LR_C = 0.000000000001    # learning rate for critic
 
-MAX_GLOBAL_EP = 100
+MAX_GLOBAL_EP = 1
 GLOBAL_RUNNING_R = []
 GLOBAL_EP = 0
-THREAD_NUM = 4
+THREAD_NUM = 1
 SAVE_PER_EPISODE = 10
 
 env = EnvTest.AntEnv("-1")
@@ -102,7 +102,7 @@ class ACNet(object):
     def choose_action(self, s):  # run by a local
         prob_weights = SESS.run(self.a_prob, feed_dict={self.s_actor: s[np.newaxis, :]})
         # print("s shape = ", s.shape)
-        print("prob", prob_weights)
+        # print("prob", prob_weights)
         action = np.random.choice(range(prob_weights.shape[1]), p=prob_weights.ravel())  # select action w.r.t the actions prob
 
         return action
@@ -146,6 +146,7 @@ class Worker(object):
                     small_map[n][m] = map_[x][y]
                     y += 1
                 x += 1
+            # print(small_map)
             small_map = small_map.flatten()
             return small_map  # only for test
 
