@@ -8,12 +8,12 @@ import antLog
 GLOBAL_NET_SCOPE = 'global_net'
 UPDATE_GLOBAL_ITER = 1
 
-GAMMA = 0.95
-ENTROPY_BETA = 0.001
+GAMMA = 0.9
+ENTROPY_BETA = 0.01
 LR_A = 0.0000000001    # learning rate for actor
 LR_C = 0.0000000001    # learning rate for critic
 
-MAX_GLOBAL_EP = 200
+MAX_GLOBAL_EP = 300
 GLOBAL_RUNNING_R = []
 GLOBAL_EP = 0
 THREAD_NUM = 4
@@ -24,6 +24,7 @@ N_S = env.observation_space_shape
 N_A = env.action_space_num
 
 N_S_ACTOR = 11 * 11
+
 
 class ACNet(object):
     def __init__(self, scope, global_net=None):
@@ -41,15 +42,15 @@ class ACNet(object):
 
                 self.a_prob, self.v, self.a_params, self.c_params = self._build_net(scope)
 
-                td = tf.subtract(self.v_target, self.v, name='TD_error')
+                self.td = tf.subtract(self.v_target, self.v, name='TD_error')
                 with tf.name_scope('c_loss'):
-                    self.c_loss = tf.reduce_mean(tf.square(td))
+                    self.c_loss = tf.reduce_mean(tf.square(self.td))
                 # tf.summary.scalar('c_loss', self.c_loss)
                 with tf.name_scope('a_loss'):
                     log_prob = tf.reduce_sum(
                         tf.log(tf.clip_by_value(self.a_prob, 1e-8, 1.0)) * tf.one_hot(self.a_his, N_A, dtype=tf.float32),
-                        axis=1, keepdims=True)
-                    exp_v = log_prob * tf.stop_gradient(td)
+                        axis=1, keepdims=True, name='log_prob')
+                    exp_v = log_prob * tf.stop_gradient(self.td)
                     entropy = -tf.reduce_sum(self.a_prob * tf.log(self.a_prob + 1e-5),
                                              axis=1, keepdims=True)  # encourage exploration
                     self.exp_v = ENTROPY_BETA * entropy + exp_v
@@ -74,16 +75,17 @@ class ACNet(object):
         with tf.variable_scope('actor'):
             image_in = tf.reshape(self.s_actor, [-1, 11, 11, 1])
             conv_a1 = slim.conv2d(activation_fn=tf.nn.elu,
-                                 inputs=image_in,
-                                 num_outputs=16,
-                                 kernel_size=[5, 5],
-                                 stride=[1, 1])
-
+                                  inputs=image_in,
+                                  num_outputs=16,
+                                  kernel_size=[5, 5],
+                                  stride=[1, 1],
+                                  padding='SAME')
             conv_a2 = slim.conv2d(activation_fn=tf.nn.elu,
-                                 inputs=conv_a1,
-                                 num_outputs=32,
-                                 kernel_size=[5, 5],
-                                 stride=[1, 1])
+                                  inputs=conv_a1,
+                                  num_outputs=32,
+                                  kernel_size=[5, 5],
+                                  stride=[1, 1],
+                                  padding='SAME')
             hidden_a = slim.fully_connected(slim.flatten(conv_a2), 256, activation_fn=tf.nn.elu)
 
             a_prob = slim.fully_connected(hidden_a, N_A, activation_fn=tf.nn.softmax)
@@ -97,19 +99,22 @@ class ACNet(object):
                                   inputs=map_state_in,
                                   num_outputs=16,
                                   kernel_size=[5, 5],
-                                  stride=[1, 1])
+                                  stride=[1, 1],
+                                  padding='SAME')
+            pool_c1 = slim.max_pool2d(conv_c1, [2, 2])
             conv_c2 = slim.conv2d(activation_fn=tf.nn.elu,
-                                  inputs=conv_c1,
+                                  inputs=pool_c1,
                                   num_outputs=32,
-                                  kernel_size=[4, 4],
-                                  stride=[1, 1])
-
-            hidden_c = slim.fully_connected(conv_c2, 5000, activation_fn=tf.nn.relu)
-            v = slim.fully_connected(hidden_c, 1)
+                                  kernel_size=[5, 5],
+                                  stride=[1, 1],
+                                  padding='SAME')
+            pool_c2 = slim.max_pool2d(conv_c2, [2, 2])
+            hidden_c = slim.fully_connected(slim.flatten(pool_c2), 1000, activation_fn=tf.nn.relu)
+            # v = slim.fully_connected(inputs=hidden_c, num_outputs=1)
 
             # l_c = tf.layers.dense(self.s, 2000, tf.nn.relu6, kernel_initializer=w_init, name='lc')
             # l_c2 = tf.layers.dense(l_c, 2000, tf.nn.relu6, kernel_initializer=w_init, name='lc2')
-            # v = tf.layers.dense(l_c2, 1, kernel_initializer=w_init, name='v')  # state value
+            v = tf.layers.dense(hidden_c, 1, kernel_initializer=w_init, name='v')  # state value
         a_params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope + '/actor')
         c_params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope + '/critic')
         return a_prob, v, a_params, c_params
@@ -117,7 +122,7 @@ class ACNet(object):
     def choose_action(self, s):  # run by a local
         prob_weights = SESS.run(self.a_prob, feed_dict={self.s_actor: s[np.newaxis, :]})
         # print("s shape = ", s.shape)
-        print("prob", prob_weights)
+        # print("prob", prob_weights)
         action = np.random.choice(range(prob_weights.shape[1]), p=prob_weights.ravel())  # select action w.r.t the actions prob
 
         return action
@@ -196,7 +201,8 @@ class Worker(object):
                 # if not Done:
                 #     state_map_ = state_map_.flatten()
                     # reward = reward / len(actions_queue)
-
+                if self.task_index == 0:
+                    antLog.write_log("reward = " + str(reward), 'Summry')
                 ep_r += reward
                 buffer_r.append(reward)
                 buffer_s.append(state_map.flatten())
@@ -223,11 +229,17 @@ class Worker(object):
                         self.AC.a_his: buffer_a,
                         self.AC.v_target: buffer_v_target,
                     }
-                    if self.task_index == 1 and steps_num % 5 == 0:
+                    if self.task_index == 0 and steps_num % 1 == 0:
+                        # td = SESS.run(self.AC.td, feed_dict)
+                        # print("td shape = ", np.shape(td))
                         a_loss = SESS.run(self.AC.a_loss, feed_dict)
                         c_loss = SESS.run(self.AC.c_loss, feed_dict)
-                        antLog.write_log("a_loss = %f c_loss = %f" % (a_loss, c_loss), "Total")
+                        antLog.write_log("a_loss = %f c_loss = %f" % (a_loss, c_loss), "Summry")
 
+                    # print("a_s shape = ", np.shape(buffer_s_a))
+                    # print("s shape = ", np.shape(buffer_s))
+                    # print("a shape = ", np.shape(buffer_a))
+                    # print("v shape = ", np.shape(buffer_v_target))
                     self.AC.update_global(feed_dict)
                     buffer_s_a, buffer_s, buffer_a, buffer_r = [], [], [], []
                     self.AC.pull_global()
@@ -243,6 +255,8 @@ class Worker(object):
                     antLog.write_log(str(ep_r), "Total")
                     print("worker ", self.task_name, " T_reward = ", ep_r
                           , "GLOBAL_EP = ", GLOBAL_EP)
+                    if self.task_index == 0:
+                        antLog.write_log("T_reward" + str(ep_r), 'Summry')
 
             if GLOBAL_EP % SAVE_PER_EPISODE == 0 and self.task_name == 'W_1':
                 saver.save(SESS, model_path + '/model-' + str(GLOBAL_EP) + '.cptk')

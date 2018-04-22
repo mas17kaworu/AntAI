@@ -90,16 +90,22 @@ class AntEnv:
             self.DONE = True
         # print("next_ants = ", next_ants)
         if not self.DONE:
-            increase = len(next_ants) - len(actions)
+            increase = len(next_ants) - (len(actions)/2)
+            # print('num_now = ' + str(len(next_ants)) +
+            #       ' num_last = ' + str(len(actions)/2))
             if increase == 0:
                 reward = 1
             elif increase > 0:
                 reward = increase * 3
             elif increase < 0:
-                reward = increase * -2
+                reward = increase * 2.0
             self.stepNum += 1
         else:
+            next_ants = [0]
+            next_state = [0]
             reward = 0
+
+        # print('reward = ' + str(reward))
         # send action to ant
         return next_state, next_ants, reward, self.DONE
 
