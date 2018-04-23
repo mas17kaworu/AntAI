@@ -27,8 +27,8 @@ SMALL_MAP_WIDTH = 11
 SMALL_MAP_HEIGHT = 11
 N_S_ACTOR = SMALL_MAP_WIDTH * SMALL_MAP_HEIGHT
 
-MAP_WIDTH = 43
-MAP_HEIGHT = 39
+MAP_WIDTH = 39
+MAP_HEIGHT = 43
 
 class ACNet(object):
     def __init__(self, scope, global_net=None):

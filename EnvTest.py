@@ -16,8 +16,8 @@ PORT2 = 22040
 PORT3 = 22038
 PORT4 = 22041
 
-MAP_WIDTH = 43
-MAP_HEIGHT = 39
+MAP_WIDTH = 39
+MAP_HEIGHT = 43
 
 MY_ANT = 0
 DEAD = -10
@@ -100,7 +100,7 @@ class AntEnv:
         except Exception as err:
             self.DONE = True
         # print("next_ants = ", next_ants)
-
+        print("shpe" + str(next_state.shape))
         if not self.DONE:
             # increase = len(next_ants) - (len(actions)/2)
             # if increase == 0:
