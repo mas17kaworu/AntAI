@@ -10,13 +10,13 @@ UPDATE_GLOBAL_ITER = 1
 
 GAMMA = 0.9
 ENTROPY_BETA = 0.01
-LR_A = 0.00000001    # learning rate for actor
-LR_C = 0.00000001    # learning rate for critic
+LR_A = 0.000001    # learning rate for actor
+LR_C = 0.000001    # learning rate for critic
 
-MAX_GLOBAL_EP = 1
+MAX_GLOBAL_EP = 200
 GLOBAL_RUNNING_R = []
 GLOBAL_EP = 0
-THREAD_NUM = 1
+THREAD_NUM = 4
 SAVE_PER_EPISODE = 10
 
 env = EnvTest.AntEnv("-1")
@@ -48,8 +48,8 @@ class ACNet(object):
 
                 self.td = tf.subtract(self.v_target, self.v, name='TD_error')
                 with tf.name_scope('c_loss'):
-                    self.c_loss = tf.reduce_mean(tf.square(self.td))
-
+                    # self.c_loss = tf.reduce_mean(tf.square(self.td))
+                    self.c_loss = tf.reduce_mean(self.td)
                 with tf.name_scope('a_loss'):
                     log_prob = tf.reduce_sum(
                         tf.log(tf.clip_by_value(self.a_prob, 1e-8, 1.0)) * tf.one_hot(self.a_his, N_A, dtype=tf.float32),
@@ -78,12 +78,12 @@ class ACNet(object):
     def _build_net(self, scope):
         w_init = tf.random_normal_initializer(0., 1.0)
         with tf.variable_scope('actor'):
-            image_in = tf.reshape(self.s_actor, [-1, SMALL_MAP_WIDTH, SMALL_MAP_HEIGHT, 1])
+            image_in = tf.reshape(self.s, [-1, SMALL_MAP_WIDTH, SMALL_MAP_HEIGHT, 1])
             conv_1 = slim.conv2d(activation_fn=tf.nn.elu,
                                  inputs=image_in,
                                  num_outputs=64,
                                  kernel_size=[5, 5],
-                                 stride=[2, 2])
+                                 stride=[1, 1])
             conv_2 = slim.conv2d(activation_fn=tf.nn.elu,
                                  inputs=conv_1,
                                  num_outputs=128,
@@ -110,7 +110,7 @@ class ACNet(object):
         return a_prob, v, a_params, c_params
 
     def choose_action(self, s):  # run by a local
-        prob_weights = SESS.run(self.a_prob, feed_dict={self.s_actor: s[np.newaxis, :]})
+        prob_weights = SESS.run(self.a_prob, feed_dict={self.s: s[np.newaxis, :]})
         # print("s shape = ", s.shape)
         # print("prob", prob_weights)
         action = np.random.choice(range(prob_weights.shape[1]), p=prob_weights.ravel())  # select action w.r.t the actions prob
@@ -190,49 +190,61 @@ class Worker(object):
                 if self.task_index == 0:
                     antLog.write_log('reward = ' + str(rewards), "Task1Summary")
                 i_tmp = 0
-                for loc in ants_loc:
-                    buffer_r.append(rewards[i])
-                    i_tmp += 1
+                if not game_done:
+                    for loc in ants_loc:
+                        buffer_r.append(rewards[i_tmp])
+                        i_tmp += 1
 
                 # ep_r += reward
                 # do update N-Network
                 if total_step % UPDATE_GLOBAL_ITER == 0 or game_done:
                     buffer_s_next = []
                     if game_done:
-                        v_s_ = 0  # all 0
+                        v_s_ = [[0]]  # all 0
                     else:
                         i_tmp2 = 0
-                        for loc in ants_loc: # some Ants has dead
+                        for loc in ants_loc:  # some Ants has dead
                             if rewards[i_tmp2] == -100:  # dead ant
                                 s_a_ = np.zeros((SMALL_MAP_WIDTH, SMALL_MAP_HEIGHT))
+                                s_a_ = s_a_.flatten()
                             else:
-                                s_a_ = get_ant_state(state_map, loc_dict[loc])
-                        buffer_s_next.append(s_a_)
+                                next_loc = loc_dict[loc]
+                                s_a_ = get_ant_state(state_map_, next_loc)
+                            buffer_s_next.append(s_a_)
+                            i_tmp2 += 1
+                        # print(str(buffer_s_next))
                         v_s_ = SESS.run(self.AC.v, {self.AC.s: np.vstack(buffer_s_next)})  # RNN? use s_a in one step
                         # print("value from net ", v_s_)
 
                     buffer_v_target = []
-                    for r in buffer_r[::-1]:  # reverse buffer r
-                        v_s_ = r + GAMMA * v_s_
-                        buffer_v_target.append(v_s_)
-                    buffer_v_target.reverse()
 
-                    buffer_s, buffer_a, buffer_v_target = np.vstack(buffer_s), np.array(buffer_a), np.vstack(buffer_v_target)
-                    feed_dict = {
-                        self.AC.s: buffer_s,
-                        self.AC.a_his: buffer_a,
-                        self.AC.v_target: buffer_v_target,
-                    }
-                    if self.task_index == 0 and steps_num % 1 == 0:
-                        loss_a = SESS.run(self.AC.a_loss, feed_dict)
-                        loss_c = SESS.run(self.AC.c_loss, feed_dict)
-                        # td = SESS.run(self.AC.td, feed_dict)
-                        antLog.write_log("loss_a = %f, loss_c = %f" % (loss_a, loss_c), "Task1Summary")
-                        # antLog.write_log('td =' + str(td), "Task1Summary")
+                    i = 0
+                    # print("value from net ", v_s_)
+                    if not game_done:
+                        for r in buffer_r:
+                            if r == -100:  # -100 represent ant dead
+                                v_s_[i] = r
+                            else:
+                                v_s_[i] = r + GAMMA * v_s_[i]
+                            buffer_v_target.append(v_s_[i])
+                            i += 1
 
-                    self.AC.update_global(feed_dict)
-                    buffer_s, buffer_a, buffer_r = [], [], []
-                    self.AC.pull_global()
+                        buffer_s, buffer_a, buffer_v_target = np.vstack(buffer_s), np.array(buffer_a), np.vstack(buffer_v_target)
+                        feed_dict = {
+                            self.AC.s: buffer_s,
+                            self.AC.a_his: buffer_a,
+                            self.AC.v_target: buffer_v_target,
+                        }
+                        if self.task_index == 0 and steps_num % 1 == 0:
+                            loss_a = SESS.run(self.AC.a_loss, feed_dict)
+                            loss_c = SESS.run(self.AC.c_loss, feed_dict)
+                            # td = SESS.run(self.AC.td, feed_dict)
+                            antLog.write_log("loss_a = %f, loss_c = %f" % (loss_a, loss_c), "Task1Summary")
+                            # antLog.write_log('td =' + str(td), "Task1Summary")
+
+                        self.AC.update_global(feed_dict)
+                        buffer_s, buffer_a, buffer_r = [], [], []
+                        self.AC.pull_global()
 
                 actions_queue.clear()
                 steps_num += 1
