@@ -6,7 +6,7 @@ from queue import Queue
 import threading
 import antLog
 
-Start_play_command = 'C:\Python27\python tools/playgame.py "python %s" "python tools/sample_bots/python/HunterBot.py"  ' \
+Start_play_command = 'D:\Python27\python tools/playgame.py "python %s" "python tools/sample_bots/python/HunterBot.py"  ' \
                      '--map_file "tools/maps/example/tutorial1.map" --log_dir %s --turns 60 --scenario   --nolaunch' \
                      ' --player_seed 7  --turntime 5000 -e'
 # --verbose   --nolaunch
@@ -147,7 +147,7 @@ class AntEnv:
             self.connection.close()
 
     def generate_ant_reward(self, actions, map_state_next):
-        # print("actions:", actions)
+        print("actions:", actions)
         loc_dict = {}
         rewards = []
         i = 0
@@ -162,11 +162,20 @@ class AntEnv:
                 loc_dict[loc] = next_loc
                 if self.has_eat_food(next_loc):
                     reward = 30
-            elif map_state_next[next_loc[0]][next_loc[1]] == DEAD:
-                reward = -300
-                loc_dict[loc] = (-1, -1)
+            else:
+                if map_state_next[next_loc[0]][next_loc[1]] == DEAD:
+                    reward = -300
+                    loc_dict[loc] = (-1, -1)
+                else:
+                    if map_state_next[loc[0]][loc[1]] == MY_ANT:
+                        reward = -10
+                    if map_state_next[loc[0]][loc[1]] == DEAD:
+                        reward = -300
+                        loc_dict[loc] = (-1, -1)
+            if reward == 0:
+                print("reward == 0!!!!  target " + str(map_state_next[next_loc[0]][next_loc[1]]) + " " + str(map_state_next[loc[0]][loc[1]]))
             i += 2
-            # print(str(loc) + " reward = " + str(reward))
+            print(str(next_loc) + " reward = " + str(reward))
 
             rewards.append(reward)
         return rewards, loc_dict

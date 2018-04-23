@@ -16,8 +16,8 @@ LR_C = 0.001    # learning rate for critic
 MAX_GLOBAL_EP = 100
 GLOBAL_RUNNING_R = []
 GLOBAL_EP = 0
-THREAD_NUM = 4
-SAVE_PER_EPISODE = 10
+THREAD_NUM = 1
+SAVE_PER_EPISODE = 50
 
 env = EnvTest.AntEnv("-1")
 N_S = env.observation_space_shape
@@ -110,7 +110,7 @@ class ACNet(object):
     def choose_action(self, s):  # run by a local
         prob_weights = SESS.run(self.a_prob, feed_dict={self.s: s[np.newaxis, :]})
         # print("s shape = ", s.shape)
-        print("prob", prob_weights)
+        # print("prob", prob_weights)
         action = np.random.choice(range(prob_weights.shape[1]), p=prob_weights.ravel())  # select action w.r.t the actions prob
 
         return action
