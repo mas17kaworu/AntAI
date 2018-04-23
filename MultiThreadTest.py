@@ -10,10 +10,10 @@ UPDATE_GLOBAL_ITER = 1
 
 GAMMA = 0.9
 ENTROPY_BETA = 0.01
-LR_A = 0.000001    # learning rate for actor
-LR_C = 0.000001    # learning rate for critic
+LR_A = 0.000000001    # learning rate for actor
+LR_C = 0.001    # learning rate for critic
 
-MAX_GLOBAL_EP = 200
+MAX_GLOBAL_EP = 100
 GLOBAL_RUNNING_R = []
 GLOBAL_EP = 0
 THREAD_NUM = 4
@@ -48,11 +48,10 @@ class ACNet(object):
 
                 self.td = tf.subtract(self.v_target, self.v, name='TD_error')
                 with tf.name_scope('c_loss'):
-                    # self.c_loss = tf.reduce_mean(tf.square(self.td))
-                    self.c_loss = tf.reduce_mean(self.td)
+                    self.c_loss = tf.reduce_mean(tf.square(self.td))
                 with tf.name_scope('a_loss'):
                     log_prob = tf.reduce_sum(
-                        tf.log(tf.clip_by_value(self.a_prob, 1e-8, 1.0)) * tf.one_hot(self.a_his, N_A, dtype=tf.float32),
+                        tf.log(tf.clip_by_value(self.a_prob, 1e-20, 1.0)) * tf.one_hot(self.a_his, N_A, dtype=tf.float32),
                         axis=1, keepdims=True)
                     exp_v = log_prob * tf.stop_gradient(self.td)
                     entropy = -tf.reduce_sum(self.a_prob * tf.log(self.a_prob + 1e-5),
@@ -77,7 +76,7 @@ class ACNet(object):
 
     def _build_net(self, scope):
         w_init = tf.random_normal_initializer(0., 1.0)
-        with tf.variable_scope('actor'):
+        with tf.variable_scope('critic'):
             image_in = tf.reshape(self.s, [-1, SMALL_MAP_WIDTH, SMALL_MAP_HEIGHT, 1])
             conv_1 = slim.conv2d(activation_fn=tf.nn.elu,
                                  inputs=image_in,
@@ -91,17 +90,16 @@ class ACNet(object):
                                  stride=[2, 2])
             after_cnn = slim.flatten(conv_2)
             print(after_cnn)
-            hidden_a = slim.fully_connected(slim.flatten(conv_2), 1024, activation_fn=tf.nn.elu)
 
-            a_prob = slim.fully_connected(hidden_a, N_A, activation_fn=tf.nn.softmax)
-
+            hidden_c = slim.fully_connected(slim.flatten(conv_2), 1024, activation_fn=tf.nn.elu)
+            v = tf.layers.dense(hidden_c, 1, kernel_initializer=w_init, name='v')  # state value
             # l_a = tf.layers.dense(self.s_actor, 200, tf.nn.relu6, kernel_initializer=w_init, name='la')
             # l_a2 = tf.layers.dense(l_a, 200, tf.nn.relu6, kernel_initializer=w_init, name='la2')
             # a_prob = tf.layers.dense(l_a2, N_A, tf.nn.softmax, kernel_initializer=w_init, name='ap')
-        with tf.variable_scope('critic'):
-            hidden_c = slim.fully_connected(slim.flatten(conv_2), 1024, activation_fn=tf.nn.elu)
-            v = tf.layers.dense(hidden_c, 1, kernel_initializer=w_init, name='v')  # state value
+        with tf.variable_scope('actor'):
+            hidden_a = slim.fully_connected(slim.flatten(conv_2), 1024, activation_fn=tf.nn.elu)
 
+            a_prob = slim.fully_connected(hidden_a, N_A, activation_fn=tf.nn.softmax)
             # l_c = tf.layers.dense(self.s, 2000, tf.nn.relu6, kernel_initializer=w_init, name='lc')
             # l_c2 = tf.layers.dense(l_c, 2000, tf.nn.relu6, kernel_initializer=w_init, name='lc2')
             # v = tf.layers.dense(l_c2, 1, kernel_initializer=w_init, name='v')  # state value
@@ -112,7 +110,7 @@ class ACNet(object):
     def choose_action(self, s):  # run by a local
         prob_weights = SESS.run(self.a_prob, feed_dict={self.s: s[np.newaxis, :]})
         # print("s shape = ", s.shape)
-        # print("prob", prob_weights)
+        print("prob", prob_weights)
         action = np.random.choice(range(prob_weights.shape[1]), p=prob_weights.ravel())  # select action w.r.t the actions prob
 
         return action
@@ -188,14 +186,14 @@ class Worker(object):
                 # print("actions ", actions_queue)
                 state_map_, ants_loc_, rewards, game_done, loc_dict = self.env.step(actions_queue)
                 if self.task_index == 0:
-                    antLog.write_log('reward = ' + str(rewards), "Task1Summary")
+                    antLog.write_log('reward = ' + str(rewards), "Task0Summary")
                 i_tmp = 0
                 if not game_done:
                     for loc in ants_loc:
                         buffer_r.append(rewards[i_tmp])
+                        ep_r += rewards[i_tmp]
                         i_tmp += 1
 
-                # ep_r += reward
                 # do update N-Network
                 if total_step % UPDATE_GLOBAL_ITER == 0 or game_done:
                     buffer_s_next = []
@@ -239,13 +237,14 @@ class Worker(object):
                             loss_a = SESS.run(self.AC.a_loss, feed_dict)
                             loss_c = SESS.run(self.AC.c_loss, feed_dict)
                             # td = SESS.run(self.AC.td, feed_dict)
-                            antLog.write_log("loss_a = %f, loss_c = %f" % (loss_a, loss_c), "Task1Summary")
-                            # antLog.write_log('td =' + str(td), "Task1Summary")
+                            antLog.write_log("loss_a = %f, loss_c = %f" % (loss_a, loss_c), "Task0Summary")
+                            # antLog.write_log('td =' + str(td), "Task0Summary")
 
                         self.AC.update_global(feed_dict)
                         buffer_s, buffer_a, buffer_r = [], [], []
                         self.AC.pull_global()
-
+                    elif self.task_index == 0:
+                        antLog.write_log("Game Done", "Task0Summary")
                 actions_queue.clear()
                 steps_num += 1
                 # print(steps_num)
@@ -272,8 +271,9 @@ if __name__ == "__main__":
     SESS = tf.Session()
 
     with tf.device("/cpu:0"):
-        opt_a = tf.train.RMSPropOptimizer(LR_A, name='RMSPropA')  #RMSPropOptimizer
-        opt_c = tf.train.RMSPropOptimizer(LR_C, name='RMSPropC')
+
+        opt_a = tf.train.AdamOptimizer(LR_A, name='RMSPropA')  #RMSPropOptimizer
+        opt_c = tf.train.AdamOptimizer(LR_C, name='RMSPropC')
         global_net = ACNet(GLOBAL_NET_SCOPE)
         workers = []
         # Create Worker
