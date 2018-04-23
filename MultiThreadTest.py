@@ -16,7 +16,7 @@ LR_C = 0.001    # learning rate for critic
 MAX_GLOBAL_EP = 5000
 GLOBAL_RUNNING_R = []
 GLOBAL_EP = 0
-THREAD_NUM = 1
+THREAD_NUM = 4
 SAVE_PER_EPISODE = 50
 
 env = EnvTest.AntEnv("-1")

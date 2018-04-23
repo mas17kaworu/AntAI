@@ -147,7 +147,7 @@ class AntEnv:
             self.connection.close()
 
     def generate_ant_reward(self, actions, map_state_next):
-        print("actions:", actions)
+        # print("actions:", actions)
         loc_dict = {}
         rewards = []
         i = 0
@@ -175,7 +175,7 @@ class AntEnv:
             if reward == 0:
                 print("reward == 0!!!!  target " + str(map_state_next[next_loc[0]][next_loc[1]]) + " " + str(map_state_next[loc[0]][loc[1]]))
             i += 2
-            print(str(next_loc) + " reward = " + str(reward))
+            # print(str(next_loc) + " reward = " + str(reward))
 
             rewards.append(reward)
         return rewards, loc_dict
