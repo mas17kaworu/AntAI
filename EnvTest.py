@@ -100,7 +100,7 @@ class AntEnv:
         except Exception as err:
             self.DONE = True
         # print("next_ants = ", next_ants)
-        print("shpe" + str(next_state.shape))
+        # print("shpe" + str(next_state.shape))
         if not self.DONE:
             # increase = len(next_ants) - (len(actions)/2)
             # if increase == 0:
