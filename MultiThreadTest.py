@@ -9,11 +9,11 @@ GLOBAL_NET_SCOPE = 'global_net'
 UPDATE_GLOBAL_ITER = 1
 
 GAMMA = 0.9
-ENTROPY_BETA = 0.01
-LR_A = 0.000000001    # learning rate for actor
-LR_C = 0.001    # learning rate for critic
+ENTROPY_BETA = 0.001
+LR_A = 0.0000001    # learning rate for actor
+LR_C = 0.0000001    # learning rate for critic
 
-MAX_GLOBAL_EP = 5000
+MAX_GLOBAL_EP = 300
 GLOBAL_RUNNING_R = []
 GLOBAL_EP = 0
 THREAD_NUM = 4
@@ -183,9 +183,11 @@ class Worker(object):
                     actions_queue.append(action_normal)
                     buffer_a.append(action)
                     buffer_s.append(s_a)
+
                 # print("actions ", actions_queue)
                 state_map_, ants_loc_, rewards, game_done, loc_dict = self.env.step(actions_queue)
                 if self.task_index == 0:
+                    antLog.write_log('new_ants_loc_ = ' + str(ants_loc), "Task0Summary")
                     antLog.write_log('reward = ' + str(rewards), "Task0Summary")
                 i_tmp = 0
                 if not game_done:

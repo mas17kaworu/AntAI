@@ -6,14 +6,14 @@ from queue import Queue
 import threading
 import antLog
 
-Start_play_command = 'D:\Python27\python tools/playgame.py "python %s" "python tools/sample_bots/python/HunterBot.py"  ' \
+Start_play_command = 'C:\Python27\python tools/playgame.py "python %s" "python tools/sample_bots/python/HunterBot.py"  ' \
                      '--map_file "tools/maps/example/tutorial1.map" --log_dir %s --turns 60 --scenario   --nolaunch' \
                      ' --player_seed 7  --turntime 5000 -e'
 # --verbose   --nolaunch
 
 PORT1 = 22029
-PORT2 = 22040
-PORT3 = 22038
+PORT2 = 22025
+PORT3 = 22024
 PORT4 = 22041
 
 MAP_WIDTH = 39
@@ -152,30 +152,34 @@ class AntEnv:
         rewards = []
         i = 0
         for _ in range(int(len(actions) / 2)):
-            reward = 0
+            reward = -1
             loc = actions[i]
             act = actions[i + 1]
-            next_loc = get_next_loc(act, loc)
+            next_target_loc = get_next_loc(act, loc)
             loc_dict[loc] = loc
-            if map_state_next[next_loc[0]][next_loc[1]] == MY_ANT:
-                reward = 1
-                loc_dict[loc] = next_loc
-                if self.has_eat_food(next_loc):
+            if map_state_next[next_target_loc[0]][next_target_loc[1]] == MY_ANT or map_state_next[next_target_loc[0]][next_target_loc[1]] == HILL:
+                if loc == next_target_loc:
+                    reward = 0
+                else:
+                    reward = 1
+                loc_dict[loc] = next_target_loc
+                if self.has_eat_food(next_target_loc):
                     reward = 30
             else:
-                if map_state_next[next_loc[0]][next_loc[1]] == DEAD:
-                    reward = -300
+                if map_state_next[next_target_loc[0]][next_target_loc[1]] == DEAD:
+                    reward = -30
                     loc_dict[loc] = (-1, -1)
                 else:
                     if map_state_next[loc[0]][loc[1]] == MY_ANT:
-                        reward = -10
+                        reward = -5
                     if map_state_next[loc[0]][loc[1]] == DEAD:
-                        reward = -300
+                        reward = -30
                         loc_dict[loc] = (-1, -1)
-            if reward == 0:
-                print("reward == 0!!!!  target " + str(map_state_next[next_loc[0]][next_loc[1]]) + " " + str(map_state_next[loc[0]][loc[1]]))
+            if reward == -1:
+                print("reward == -1!!!!  target " + str(map_state_next[next_target_loc[0]][next_target_loc[1]]) +
+                      " " + str(map_state_next[loc[0]][loc[1]]))
             i += 2
-            # print(str(next_loc) + " reward = " + str(reward))
+            # print(str(next_target_loc) + " reward = " + str(reward))
 
             rewards.append(reward)
         return rewards, loc_dict
@@ -191,7 +195,7 @@ class AntEnv:
         x, y = getCorrectCoord(next_loc[0], next_loc[1] + 1)
         if self.state[x][y] == FOOD:
             return True
-        x, y = getCorrectCoord(next_loc[0], next_loc[1] -1)
+        x, y = getCorrectCoord(next_loc[0], next_loc[1] - 1)
         if self.state[x][y] == FOOD:
             return True
         return False
