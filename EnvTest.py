@@ -11,10 +11,10 @@ Start_play_command = 'C:\Python27\python tools/playgame.py "python %s" "python t
                      ' --player_seed 7  --turntime 5000 -e'
 # --verbose   --nolaunch
 
-PORT1 = 22029
-PORT2 = 22025
-PORT3 = 22024
-PORT4 = 22041
+PORT1 = 12023
+PORT2 = 12025
+PORT3 = 12024
+PORT4 = 12041
 
 MAP_WIDTH = 39
 MAP_HEIGHT = 43

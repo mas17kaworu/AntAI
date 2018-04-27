@@ -7,7 +7,7 @@ import threading
 import antLog
 
 
-port_remote = 22029
+port_remote = 12023
 botMark = 'W_1'
 
 # define a class with a do_turn method

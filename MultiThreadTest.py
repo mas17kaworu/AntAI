@@ -80,24 +80,24 @@ class ACNet(object):
             image_in = tf.reshape(self.s, [-1, SMALL_MAP_WIDTH, SMALL_MAP_HEIGHT, 1])
             conv_1 = slim.conv2d(activation_fn=tf.nn.elu,
                                  inputs=image_in,
-                                 num_outputs=64,
+                                 num_outputs=16,
                                  kernel_size=[5, 5],
                                  stride=[1, 1])
             conv_2 = slim.conv2d(activation_fn=tf.nn.elu,
                                  inputs=conv_1,
-                                 num_outputs=128,
+                                 num_outputs=32,
                                  kernel_size=[5, 5],
-                                 stride=[2, 2])
+                                 stride=[1, 1])
             after_cnn = slim.flatten(conv_2)
             print(after_cnn)
 
-            hidden_c = slim.fully_connected(slim.flatten(conv_2), 1024, activation_fn=tf.nn.elu)
+            hidden_c = slim.fully_connected(slim.flatten(conv_2), 4096, activation_fn=tf.nn.elu)
             v = tf.layers.dense(hidden_c, 1, kernel_initializer=w_init, name='v')  # state value
             # l_a = tf.layers.dense(self.s_actor, 200, tf.nn.relu6, kernel_initializer=w_init, name='la')
             # l_a2 = tf.layers.dense(l_a, 200, tf.nn.relu6, kernel_initializer=w_init, name='la2')
             # a_prob = tf.layers.dense(l_a2, N_A, tf.nn.softmax, kernel_initializer=w_init, name='ap')
         with tf.variable_scope('actor'):
-            hidden_a = slim.fully_connected(slim.flatten(conv_2), 1024, activation_fn=tf.nn.elu)
+            hidden_a = slim.fully_connected(slim.flatten(conv_2), 4096, activation_fn=tf.nn.elu)
 
             a_prob = slim.fully_connected(hidden_a, N_A, activation_fn=tf.nn.softmax)
             # l_c = tf.layers.dense(self.s, 2000, tf.nn.relu6, kernel_initializer=w_init, name='lc')
