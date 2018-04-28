@@ -4,31 +4,33 @@ import tensorflow.contrib.slim as slim
 import EnvTest
 import threading
 import antLog
+import Constants
 
 GLOBAL_NET_SCOPE = 'global_net'
 UPDATE_GLOBAL_ITER = 1
 
 GAMMA = 0.9
 ENTROPY_BETA = 0.001
-LR_A = 0.0000001    # learning rate for actor
+LR_A = 0.00000001    # learning rate for actor
 LR_C = 0.0000001    # learning rate for critic
 
 MAX_GLOBAL_EP = 300
 GLOBAL_RUNNING_R = []
 GLOBAL_EP = 0
 THREAD_NUM = 4
+
+load_model = False
 SAVE_PER_EPISODE = 50
+SHOULD_SAVE = True
 
 env = EnvTest.AntEnv("-1")
 N_S = env.observation_space_shape
 N_A = env.action_space_num
 
-SMALL_MAP_WIDTH = 11
-SMALL_MAP_HEIGHT = 11
+SMALL_MAP_WIDTH = 7
+SMALL_MAP_HEIGHT = 7
 N_S_ACTOR = SMALL_MAP_WIDTH * SMALL_MAP_HEIGHT
 
-MAP_WIDTH = 39
-MAP_HEIGHT = 43
 
 class ACNet(object):
     def __init__(self, scope, global_net=None):
@@ -76,28 +78,28 @@ class ACNet(object):
 
     def _build_net(self, scope):
         w_init = tf.random_normal_initializer(0., 1.0)
-        with tf.variable_scope('critic'):
+        with tf.variable_scope('critic'): # only critic controls the cnn update
             image_in = tf.reshape(self.s, [-1, SMALL_MAP_WIDTH, SMALL_MAP_HEIGHT, 1])
             conv_1 = slim.conv2d(activation_fn=tf.nn.elu,
                                  inputs=image_in,
                                  num_outputs=16,
-                                 kernel_size=[5, 5],
+                                 kernel_size=[3, 3],
                                  stride=[1, 1])
             conv_2 = slim.conv2d(activation_fn=tf.nn.elu,
                                  inputs=conv_1,
                                  num_outputs=32,
-                                 kernel_size=[5, 5],
+                                 kernel_size=[3, 3],
                                  stride=[1, 1])
             after_cnn = slim.flatten(conv_2)
             print(after_cnn)
 
-            hidden_c = slim.fully_connected(slim.flatten(conv_2), 4096, activation_fn=tf.nn.elu)
+            hidden_c = slim.fully_connected(slim.flatten(conv_2), 2048, activation_fn=tf.nn.elu)
             v = tf.layers.dense(hidden_c, 1, kernel_initializer=w_init, name='v')  # state value
             # l_a = tf.layers.dense(self.s_actor, 200, tf.nn.relu6, kernel_initializer=w_init, name='la')
             # l_a2 = tf.layers.dense(l_a, 200, tf.nn.relu6, kernel_initializer=w_init, name='la2')
             # a_prob = tf.layers.dense(l_a2, N_A, tf.nn.softmax, kernel_initializer=w_init, name='ap')
         with tf.variable_scope('actor'):
-            hidden_a = slim.fully_connected(slim.flatten(conv_2), 4096, activation_fn=tf.nn.elu)
+            hidden_a = slim.fully_connected(slim.flatten(conv_2), 2048, activation_fn=tf.nn.elu)
 
             a_prob = slim.fully_connected(hidden_a, N_A, activation_fn=tf.nn.softmax)
             # l_c = tf.layers.dense(self.s, 2000, tf.nn.relu6, kernel_initializer=w_init, name='lc')
@@ -110,6 +112,7 @@ class ACNet(object):
     def choose_action(self, s):  # run by a local
         prob_weights = SESS.run(self.a_prob, feed_dict={self.s: s[np.newaxis, :]})
         # print("s shape = ", s.shape)
+        antLog.write_log('prob = ' + str(prob_weights), "Prob")
         # print("prob", prob_weights)
         action = np.random.choice(range(prob_weights.shape[1]), p=prob_weights.ravel())  # select action w.r.t the actions prob
 
@@ -134,29 +137,30 @@ class Worker(object):
         self.env = EnvTest.AntEnv(name)
         self.AC = ACNet(name, globalAC)
         self.ants = []
+
     def work(self, saver):
         def get_ant_state(map_, loc_):
             # print(map_.shape)
             small_map = np.zeros((SMALL_MAP_HEIGHT, SMALL_MAP_WIDTH))
-            x = loc_[0] - 5
+            x = loc_[0] - int(SMALL_MAP_WIDTH / 2)
             for n in range(SMALL_MAP_HEIGHT):
                 if x < 0:
-                    x = x + 43
-                elif x >= 43:
-                    x = x - 43
-                y = loc_[1] - 5
+                    x = x + Constants.MAP_HEIGHT
+                elif x >= Constants.MAP_HEIGHT:
+                    x = x - Constants.MAP_HEIGHT
+                y = loc_[1] - int(SMALL_MAP_HEIGHT / 2)
                 for m in range(SMALL_MAP_WIDTH):
                     if y < 0:
-                        y = y + 39
-                    elif y >= 39:
-                        y = y - 39
-                    #print('x=',x ,' y=',y)
+                        y = y + Constants.MAP_WIDTH
+                    elif y >= Constants.MAP_WIDTH:
+                        y = y - Constants.MAP_WIDTH
+                    # print('x=',x ,' y=',y)
                     small_map[n][m] = map_[x][y]
                     y += 1
                 x += 1
             # print(small_map)
             small_map = small_map.flatten()
-            return small_map  # only for test
+            return small_map
 
         global GLOBAL_RUNNING_R, GLOBAL_EP
         print('Start Worker: ', self.task_index)
@@ -167,6 +171,7 @@ class Worker(object):
             state_map, ants_loc, game_done = self.env.reset()
             # print("worker", self.task_index, "receive first state", state_map)
             steps_num = 1
+            max_ants_num = 0
             ep_r = 0
             actions_queue = []
             # self.ants = ants_loc
@@ -186,15 +191,19 @@ class Worker(object):
 
                 # print("actions ", actions_queue)
                 state_map_, ants_loc_, rewards, game_done, loc_dict = self.env.step(actions_queue)
+                if max_ants_num < len(rewards):
+                    max_ants_num = len(rewards)
+
                 if self.task_index == 0:
-                    antLog.write_log('new_ants_loc_ = ' + str(ants_loc), "Task0Summary")
+                    antLog.write_log('GLOBAL_EP = ' + str(GLOBAL_EP), "Task0Summary")
+                    antLog.write_log('step = ' + str(steps_num), "Task0Summary")
+                    antLog.write_log('actions = ' + str(actions_queue), "Task0Summary")
+                    antLog.write_log('new_ants_loc_ = ' + str(ants_loc_), "Task0Summary")
                     antLog.write_log('reward = ' + str(rewards), "Task0Summary")
-                i_tmp = 0
                 if not game_done:
                     for loc in ants_loc:
-                        buffer_r.append(rewards[i_tmp])
-                        ep_r += rewards[i_tmp]
-                        i_tmp += 1
+                        buffer_r.append(rewards[loc])  # choose the right reward, then put it into queue
+                        ep_r += rewards[loc]
 
                 # do update N-Network
                 if total_step % UPDATE_GLOBAL_ITER == 0 or game_done:
@@ -204,12 +213,16 @@ class Worker(object):
                     else:
                         i_tmp2 = 0
                         for loc in ants_loc:  # some Ants has dead
-                            if rewards[i_tmp2] == -100:  # dead ant
-                                s_a_ = np.zeros((SMALL_MAP_WIDTH, SMALL_MAP_HEIGHT))
-                                s_a_ = s_a_.flatten()
-                            else:
-                                next_loc = loc_dict[loc]
-                                s_a_ = get_ant_state(state_map_, next_loc)
+                            # if rewards[i_tmp2] == Constants.DEAD:  # dead ant
+                            #     s_a_ = np.zeros((SMALL_MAP_WIDTH, SMALL_MAP_HEIGHT))
+                            #     s_a_ = s_a_.flatten()
+                            # else:
+                            #     next_loc = loc_dict[loc]
+                            #     s_a_ = get_ant_state(state_map_, next_loc)
+
+                            next_loc = loc_dict[loc]
+                            s_a_ = get_ant_state(state_map_, next_loc)
+
                             buffer_s_next.append(s_a_)
                             i_tmp2 += 1
                         # print(str(buffer_s_next))
@@ -218,16 +231,16 @@ class Worker(object):
 
                     buffer_v_target = []
 
-                    i = 0
+                    i2 = 0
                     # print("value from net ", v_s_)
                     if not game_done:
                         for r in buffer_r:
-                            if r == -100:  # -100 represent ant dead
-                                v_s_[i] = r
+                            if r == Constants.DEAD:  # -100 represent ant dead
+                                v_s_[i2] = r
                             else:
-                                v_s_[i] = r + GAMMA * v_s_[i]
-                            buffer_v_target.append(v_s_[i])
-                            i += 1
+                                v_s_[i2] = r + GAMMA * v_s_[i2]
+                            buffer_v_target.append(v_s_[i2])
+                            i2 += 1
 
                         buffer_s, buffer_a, buffer_v_target = np.vstack(buffer_s), np.array(buffer_a), np.vstack(buffer_v_target)
                         feed_dict = {
@@ -238,7 +251,10 @@ class Worker(object):
                         if self.task_index == 0 and steps_num % 1 == 0:
                             loss_a = SESS.run(self.AC.a_loss, feed_dict)
                             loss_c = SESS.run(self.AC.c_loss, feed_dict)
-                            # td = SESS.run(self.AC.td, feed_dict)
+                            v_record = SESS.run(self.AC.v, feed_dict)
+
+                            antLog.write_log("v = " + str(v_record), "Task0Summary")
+                            antLog.write_log("v_s_ = " + str(v_s_), "Task0Summary")
                             antLog.write_log("loss_a = %f, loss_c = %f" % (loss_a, loss_c), "Task0Summary")
                             # antLog.write_log('td =' + str(td), "Task0Summary")
 
@@ -255,18 +271,20 @@ class Worker(object):
 
                 if game_done:
                     GLOBAL_EP += 1
-                    antLog.write_log(str(ep_r), "Total")
-                    print("worker ", self.task_name, " T_reward = ", ep_r
-                          , "GLOBAL_EP = ", GLOBAL_EP)
 
-            if GLOBAL_EP % SAVE_PER_EPISODE == 0 and self.task_name == 'W_1':
+                    antLog.write_log('max_ants_num = ' + str(max_ants_num), "Total")
+                    print("worker ", self.task_name, " max_ants_num = ", max_ants_num
+                          , "GLOBAL_EP = ", GLOBAL_EP)
+                    max_ants_num = 0
+
+            if GLOBAL_EP % SAVE_PER_EPISODE == 0 and SHOULD_SAVE:
                 saver.save(SESS, model_path + '/model-' + str(GLOBAL_EP) + '.cptk')
                 print("Saved Model")
 
             print('episode : finished')
 
 
-load_model = False
+
 model_path = './model'
 
 if __name__ == "__main__":
@@ -317,26 +335,17 @@ def get_next_loc(act, loc):
         next_loc = (loc[0], loc[1] - 1)
     x_,y_ = getCorrectCoord(next_loc[0], next_loc[1])
     next_loc = (x_, y_)
-
-    # if next_loc[0] < 0:
-    #     next_loc = (MAP_HEIGHT + next_loc[0], next_loc[1])
-    # elif next_loc[0] >= MAP_HEIGHT:
-    #     next_loc = (next_loc[0] - MAP_HEIGHT, next_loc[1])
-    # if next_loc[1] < 0:
-    #     next_loc = (MAP_WIDTH + next_loc[0], next_loc[1])
-    # elif next_loc[1] >= MAP_WIDTH:
-    #     next_loc = (next_loc[0] - MAP_WIDTH, next_loc[1])
     return next_loc
 
 def getCorrectCoord(x, y):
     x_ = x
     y_ = y
     if x < 0:
-        x_ = MAP_HEIGHT + x
-    elif x >= MAP_HEIGHT:
-        x_ = x - MAP_HEIGHT
+        x_ = Constants.MAP_HEIGHT + x
+    elif x >= Constants.MAP_HEIGHT:
+        x_ = x - Constants.MAP_HEIGHT
     if y < 0:
-        y_ = MAP_WIDTH + y
-    elif y >= MAP_WIDTH:
-        y_ = y - MAP_WIDTH
+        y_ = Constants.MAP_WIDTH + y
+    elif y >= Constants.MAP_WIDTH:
+        y_ = y - Constants.MAP_WIDTH
     return x_, y_

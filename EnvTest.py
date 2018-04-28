@@ -5,33 +5,26 @@ import socket
 from queue import Queue
 import threading
 import antLog
+import Constants
 
-Start_play_command = 'C:\Python27\python tools/playgame.py "python %s" "python tools/sample_bots/python/HunterBot.py"  ' \
-                     '--map_file "tools/maps/example/tutorial1.map" --log_dir %s --turns 60 --scenario   --nolaunch' \
+Start_play_command = 'D:\Python27\python tools/playgame.py "python %s" "python tools/sample_bots/python/HunterBot.py"  ' \
+                     '--map_file "tools/maps/maze/maze_02p_02.map" --log_dir %s --turns 300 --scenario  --nolaunch' \
                      ' --player_seed 7  --turntime 5000 -e'
 # --verbose   --nolaunch
+# map:  maze/maze_02p_02.map
 
 PORT1 = 12023
 PORT2 = 12025
 PORT3 = 12024
 PORT4 = 12041
 
-MAP_WIDTH = 39
-MAP_HEIGHT = 43
 
-MY_ANT = 0
-DEAD = -10
-LAND = -20
-FOOD = -30
-WATER = -40
-UNKNOWN = -50
-HILL = 20
 
 
 class AntEnv:
     def __init__(self, name):
         self.Env_name = name
-        self.observation_space_shape = MAP_HEIGHT * MAP_WIDTH   # 43*39=1677   +2
+        self.observation_space_shape = Constants.MAP_HEIGHT * Constants.MAP_WIDTH   # 43*39=1677   +2
         self.action_space_num = 5  # Action space  # 0--stay 1--North 2--East 3--South 4--West
         cols = 20
         rows = 20
@@ -99,8 +92,9 @@ class AntEnv:
             antLog.write_log('receive Ants ', self.Env_name)
         except Exception as err:
             self.DONE = True
+
         # print("next_ants = ", next_ants)
-        # print("shpe" + str(next_state.shape))
+        # print("shape" + str(next_state.shape))
         if not self.DONE:
             # increase = len(next_ants) - (len(actions)/2)
             # if increase == 0:
@@ -115,7 +109,7 @@ class AntEnv:
             self.stepNum += 1
         else:
             loc_dict = {}
-            ant_rewards = 0
+            ant_rewards = [0]
 
         self.ants_loc_list = next_ants
         self.state = next_state
@@ -149,54 +143,56 @@ class AntEnv:
     def generate_ant_reward(self, actions, map_state_next):
         # print("actions:", actions)
         loc_dict = {}
-        rewards = []
+        rewards = {}
         i = 0
         for _ in range(int(len(actions) / 2)):
-            reward = -1
+            reward = -100
             loc = actions[i]
             act = actions[i + 1]
             next_target_loc = get_next_loc(act, loc)
             loc_dict[loc] = loc
-            if map_state_next[next_target_loc[0]][next_target_loc[1]] == MY_ANT or map_state_next[next_target_loc[0]][next_target_loc[1]] == HILL:
+            if map_state_next[next_target_loc[0]][next_target_loc[1]] == Constants.MY_ANT\
+                    or map_state_next[next_target_loc[0]][next_target_loc[1]] == Constants.HILL:
                 if loc == next_target_loc:
-                    reward = 0
+                    reward = -1
                 else:
-                    reward = 1
+                    reward = - 0.5
                 loc_dict[loc] = next_target_loc
                 if self.has_eat_food(next_target_loc):
-                    reward = 30
+                    reward = Constants.GET_FOOD_REWARD
             else:
-                if map_state_next[next_target_loc[0]][next_target_loc[1]] == DEAD:
-                    reward = -30
-                    loc_dict[loc] = (-1, -1)
+                if map_state_next[next_target_loc[0]][next_target_loc[1]] == Constants.DEAD:
+                    reward = Constants.DEAD_ANT_REWARD
+                    loc_dict[loc] = next_target_loc
                 else:
-                    if map_state_next[loc[0]][loc[1]] == MY_ANT:
+                    if map_state_next[loc[0]][loc[1]] == Constants.MY_ANT:
                         reward = -5
-                    if map_state_next[loc[0]][loc[1]] == DEAD:
-                        reward = -30
-                        loc_dict[loc] = (-1, -1)
-            if reward == -1:
-                print("reward == -1!!!!  target " + str(map_state_next[next_target_loc[0]][next_target_loc[1]]) +
+                        loc_dict[loc] = loc
+                    if map_state_next[loc[0]][loc[1]] == Constants.DEAD:
+                        reward = Constants.DEAD_ANT_REWARD
+                        loc_dict[loc] = loc
+            if reward == -100:
+                print("reward == -100!!!!  target " + str(map_state_next[next_target_loc[0]][next_target_loc[1]]) +
                       " " + str(map_state_next[loc[0]][loc[1]]))
             i += 2
             # print(str(next_target_loc) + " reward = " + str(reward))
 
-            rewards.append(reward)
+            rewards[loc] = reward
         return rewards, loc_dict
 
     def has_eat_food(self, next_loc):
         x, y = getCorrectCoord(next_loc[0] - 1, next_loc[1])
 
-        if self.state[x][y] == FOOD:
+        if self.state[x][y] == Constants.FOOD:
             return True
         x, y = getCorrectCoord(next_loc[0] + 1, next_loc[1])
-        if self.state[x][y] == FOOD:
+        if self.state[x][y] == Constants.FOOD:
             return True
         x, y = getCorrectCoord(next_loc[0], next_loc[1] + 1)
-        if self.state[x][y] == FOOD:
+        if self.state[x][y] == Constants.FOOD:
             return True
         x, y = getCorrectCoord(next_loc[0], next_loc[1] - 1)
-        if self.state[x][y] == FOOD:
+        if self.state[x][y] == Constants.FOOD:
             return True
         return False
 
@@ -229,12 +225,12 @@ def getCorrectCoord(x, y):
     x_ = x
     y_ = y
     if x < 0:
-        x_ = MAP_HEIGHT + x
-    elif x >= MAP_HEIGHT:
-        x_ = x - MAP_HEIGHT
+        x_ = Constants.MAP_HEIGHT + x
+    elif x >= Constants.MAP_HEIGHT:
+        x_ = x - Constants.MAP_HEIGHT
     if y < 0:
-        y_ = MAP_WIDTH + y
-    elif y >= MAP_WIDTH:
-        y_ = y - MAP_WIDTH
+        y_ = Constants.MAP_WIDTH + y
+    elif y >= Constants.MAP_WIDTH:
+        y_ = y - Constants.MAP_WIDTH
     return x_, y_
 

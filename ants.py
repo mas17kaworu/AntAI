@@ -9,8 +9,8 @@ from math import sqrt
 MY_ANT = 0
 DEAD = -10
 LAND = -20
-FOOD = -30
-WATER = -40
+FOOD = -40
+WATER = -30
 UNKNOWN = -50
 HILL = 20
 
