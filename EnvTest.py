@@ -8,7 +8,7 @@ import antLog
 import Constants
 
 Start_play_command = 'D:\Python27\python tools/playgame.py "python %s" "python tools/sample_bots/python/HunterBot.py"  ' \
-                     '--map_file "tools/maps/maze/maze_02p_02.map" --log_dir %s --turns 300 --scenario  --nolaunch' \
+                     '--map_file "tools/maps/maze/maze_02p_02.map" --log_dir %s --turns 100 --scenario  --nolaunch' \
                      ' --player_seed 7  --turntime 5000 -e'
 # --verbose   --nolaunch
 # map:  maze/maze_02p_02.map
