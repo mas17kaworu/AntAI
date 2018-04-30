@@ -208,25 +208,17 @@ class Worker(object):
                         ep_r += rewards[loc]
 
                 # do update N-Network
-                if total_step % UPDATE_GLOBAL_ITER == 0 or game_done:
+                if total_step % UPDATE_GLOBAL_ITER == 0 or rewards[-1] == Constants.DEAD_ANT_REWARD or game_done:
                     buffer_s_next = []
                     if game_done:
-                        v_s_ = [[0]]  # all 0
+                        v_s_ = buffer_s[-1]
                     else:
-                        i_tmp2 = 0
                         for loc in ants_loc:  # some Ants has dead
-                            # if rewards[i_tmp2] == Constants.DEAD:  # dead ant
-                            #     s_a_ = np.zeros((SMALL_MAP_WIDTH, SMALL_MAP_HEIGHT))
-                            #     s_a_ = s_a_.flatten()
-                            # else:
-                            #     next_loc = loc_dict[loc]
-                            #     s_a_ = get_ant_state(state_map_, next_loc)
-
                             next_loc = loc_dict[loc]
                             s_a_ = get_ant_state(state_map_, next_loc)
 
                             buffer_s_next.append(s_a_)
-                            i_tmp2 += 1
+                            break  #
                         # print(str(buffer_s_next))
                         v_s_ = SESS.run(self.AC.v, {self.AC.s: np.vstack(buffer_s_next)})  # RNN? use s_a in one step
                         # print("value from net ", v_s_)
