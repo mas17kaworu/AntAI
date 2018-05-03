@@ -188,16 +188,10 @@ class AntEnv:
             if map_state_next[next_target_loc[0]][next_target_loc[1]] == Constants.MY_ANT\
                     or map_state_next[next_target_loc[0]][next_target_loc[1]] == Constants.HILL:
                 loc_dict[loc] = next_target_loc
-                d = self.distance_to_food(next_target_loc)
-                if not act == 0:
-                    if d == 1:
-                        reward = Constants.DISTANCE_1
-                    elif d == 2:
-                        reward = Constants.DISTANCE_2
-                    else:
-                        reward = 0
-                    if self.has_eat_food(next_target_loc):
-                        reward = Constants.GET_FOOD_REWARD
+                # d = self.distance_to_food(next_target_loc)
+
+                if self.has_eat_food(next_target_loc):
+                    reward = Constants.GET_FOOD_REWARD
                 else:
                     reward = 0
             else:
