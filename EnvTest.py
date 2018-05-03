@@ -8,7 +8,7 @@ import antLog
 import Constants
 
 Start_play_command = 'D:\Python27\python tools/playgame.py "python %s" "python tools/sample_bots/python/HunterBot.py"  ' \
-                     '--map_file "tools/maps/maze/maze_02p_02.map" --log_dir %s --turns 100 --scenario  --nolaunch' \
+                     '--map_file "tools/maps/example/tutorial1.map" --log_dir %s --turns 100 --scenario  --nolaunch' \
                      ' --player_seed 7  --turntime 5000 -e'
 # --verbose   --nolaunch
 # map:  maze/maze_02p_02.map
@@ -17,6 +17,8 @@ PORT1 = 12023
 PORT2 = 12025
 PORT3 = 12024
 PORT4 = 12041
+PORT5 = 12026
+PORT6 = 12027
 
 
 
@@ -60,6 +62,16 @@ class AntEnv:
         elif self.Env_name == 'W_4':
             command = Start_play_command % ('MyBot_4.py', ('ant_log_' + self.Env_name))
             t = threading.Thread(target=self.start_server, args=(PORT4,))
+            t.start()
+            print("Bot4 reStart")
+        elif self.Env_name == 'W_5':
+            command = Start_play_command % ('MyBot_5.py', ('ant_log_' + self.Env_name))
+            t = threading.Thread(target=self.start_server, args=(PORT5,))
+            t.start()
+            print("Bot4 reStart")
+        elif self.Env_name == 'W_6':
+            command = Start_play_command % ('MyBot_6.py', ('ant_log_' + self.Env_name))
+            t = threading.Thread(target=self.start_server, args=(PORT6,))
             t.start()
             print("Bot4 reStart")
         os.popen(command)
@@ -109,7 +121,7 @@ class AntEnv:
             self.stepNum += 1
         else:
             loc_dict = {}
-            ant_rewards = [0]
+            ant_rewards = {(0, 0): 0}
 
         self.ants_loc_list = next_ants
         self.state = next_state
@@ -151,26 +163,55 @@ class AntEnv:
             act = actions[i + 1]
             next_target_loc = get_next_loc(act, loc)
             loc_dict[loc] = loc
+            ######################################################################################
+            # if map_state_next[next_target_loc[0]][next_target_loc[1]] == Constants.MY_ANT\
+            #         or map_state_next[next_target_loc[0]][next_target_loc[1]] == Constants.HILL:
+            #     if loc == next_target_loc:
+            #         reward = -1
+            #     else:
+            #         reward = - 0.5
+            #     loc_dict[loc] = next_target_loc
+            #     if self.has_eat_food(next_target_loc):
+            #         reward = Constants.GET_FOOD_REWARD
+            # else:
+            #     if map_state_next[next_target_loc[0]][next_target_loc[1]] == Constants.DEAD:
+            #         reward = Constants.DEAD_ANT_REWARD
+            #         loc_dict[loc] = next_target_loc
+            #     else:
+            #         if map_state_next[loc[0]][loc[1]] == Constants.MY_ANT:
+            #             reward = -5
+            #             loc_dict[loc] = loc
+            #         if map_state_next[loc[0]][loc[1]] == Constants.DEAD:
+            #             reward = Constants.DEAD_ANT_REWARD
+            #             loc_dict[loc] = loc
+            ######################################################################################
             if map_state_next[next_target_loc[0]][next_target_loc[1]] == Constants.MY_ANT\
                     or map_state_next[next_target_loc[0]][next_target_loc[1]] == Constants.HILL:
-                if loc == next_target_loc:
-                    reward = -1
-                else:
-                    reward = - 0.5
                 loc_dict[loc] = next_target_loc
-                if self.has_eat_food(next_target_loc):
-                    reward = Constants.GET_FOOD_REWARD
+                d = self.distance_to_food(next_target_loc)
+                if not act == 0:
+                    if d == 1:
+                        reward = Constants.DISTANCE_1
+                    elif d == 2:
+                        reward = Constants.DISTANCE_2
+                    else:
+                        reward = 0
+                    if self.has_eat_food(next_target_loc):
+                        reward = Constants.GET_FOOD_REWARD
+                else:
+                    reward = 0
             else:
                 if map_state_next[next_target_loc[0]][next_target_loc[1]] == Constants.DEAD:
                     reward = Constants.DEAD_ANT_REWARD
                     loc_dict[loc] = next_target_loc
                 else:
                     if map_state_next[loc[0]][loc[1]] == Constants.MY_ANT:
-                        reward = -5
+                        reward = 0
                         loc_dict[loc] = loc
                     if map_state_next[loc[0]][loc[1]] == Constants.DEAD:
                         reward = Constants.DEAD_ANT_REWARD
                         loc_dict[loc] = loc
+            ######################################################################################
             if reward == -100:
                 print("reward == -100!!!!  target " + str(map_state_next[next_target_loc[0]][next_target_loc[1]]) +
                       " " + str(map_state_next[loc[0]][loc[1]]))
@@ -195,6 +236,71 @@ class AntEnv:
         if self.state[x][y] == Constants.FOOD:
             return True
         return False
+
+    def distance_to_food(self, next_loc):
+        x, y = getCorrectCoord(next_loc[0] - 1, next_loc[1] - 1)
+        if self.state[x][y] == Constants.FOOD:
+            return 1
+        x, y = getCorrectCoord(next_loc[0] - 1, next_loc[1] + 1)
+        if self.state[x][y] == Constants.FOOD:
+            return 1
+        x, y = getCorrectCoord(next_loc[0] + 1, next_loc[1] - 1)
+        if self.state[x][y] == Constants.FOOD:
+            return 1
+        x, y = getCorrectCoord(next_loc[0] + 1, next_loc[1] + 1)
+        if self.state[x][y] == Constants.FOOD:
+            return 1
+        x, y = getCorrectCoord(next_loc[0] + 2, next_loc[1])
+        if self.state[x][y] == Constants.FOOD:
+            return 1
+        x, y = getCorrectCoord(next_loc[0] - 2, next_loc[1])
+        if self.state[x][y] == Constants.FOOD:
+            return 1
+        x, y = getCorrectCoord(next_loc[0], next_loc[1] + 2)
+        if self.state[x][y] == Constants.FOOD:
+            return 1
+        x, y = getCorrectCoord(next_loc[0], next_loc[1] - 2)
+        if self.state[x][y] == Constants.FOOD:
+            return 1
+
+        x, y = getCorrectCoord(next_loc[0] - 3, next_loc[1])
+        if self.state[x][y] == Constants.FOOD:
+            return 2
+        x, y = getCorrectCoord(next_loc[0] - 2, next_loc[1] + 1)
+        if self.state[x][y] == Constants.FOOD:
+            return 2
+        x, y = getCorrectCoord(next_loc[0] - 2, next_loc[1] - 1)
+        if self.state[x][y] == Constants.FOOD:
+            return 2
+        x, y = getCorrectCoord(next_loc[0] - 1, next_loc[1] + 2)
+        if self.state[x][y] == Constants.FOOD:
+            return 2
+        x, y = getCorrectCoord(next_loc[0] - 1, next_loc[1] -2)
+        if self.state[x][y] == Constants.FOOD:
+            return 2
+        x, y = getCorrectCoord(next_loc[0], next_loc[1] + 3)
+        if self.state[x][y] == Constants.FOOD:
+            return 2
+        x, y = getCorrectCoord(next_loc[0], next_loc[1] - 3)
+        if self.state[x][y] == Constants.FOOD:
+            return 2
+        x, y = getCorrectCoord(next_loc[0] + 1, next_loc[1] + 2)
+        if self.state[x][y] == Constants.FOOD:
+            return 2
+        x, y = getCorrectCoord(next_loc[0] + 1, next_loc[1] - 2)
+        if self.state[x][y] == Constants.FOOD:
+            return 2
+        x, y = getCorrectCoord(next_loc[0] + 2, next_loc[1] + 1)
+        if self.state[x][y] == Constants.FOOD:
+            return 2
+        x, y = getCorrectCoord(next_loc[0] + 2, next_loc[1] - 1)
+        if self.state[x][y] == Constants.FOOD:
+            return 2
+        x, y = getCorrectCoord(next_loc[0] + 3, next_loc[1])
+        if self.state[x][y] == Constants.FOOD:
+            return 2
+        return -1
+
 
 def get_next_loc(act, loc):
     next_loc = (0, 0)

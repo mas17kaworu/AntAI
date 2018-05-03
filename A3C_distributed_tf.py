@@ -82,6 +82,7 @@ class ACNet(object):
 
     def choose_action(self, s):  # run by a local
         prob_weights = self.sess.run(self.a_prob, feed_dict={self.s: s[np.newaxis, :]})
+        print("prob = ", prob_weights)
         action = np.random.choice(range(prob_weights.shape[1]),
                                   p=prob_weights.ravel())  # select action w.r.t the actions prob
         return action
@@ -132,8 +133,10 @@ def work(job_name, task_index, global_ep, lock, r_queue, global_running_r):
                     #     env.render()
                     a = local_net.choose_action(s)
                     s_, r, done, info = env.step(a)
+
                     if done: r = -5.
                     ep_r += r
+                    print("r = ", r)
                     buffer_s.append(s)
                     buffer_a.append(a)
                     buffer_r.append(r)

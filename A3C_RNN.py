@@ -18,6 +18,7 @@ import gym
 import os
 import shutil
 import matplotlib.pyplot as plt
+import antLog
 
 GAME = 'Pendulum-v0'
 OUTPUT_GRAPH = True
@@ -117,6 +118,7 @@ class ACNet(object):
     def choose_action(self, s, cell_state):  # run by a local
         s = s[np.newaxis, :]
         a, cell_state = SESS.run([self.A, self.final_state], {self.s: s, self.init_state: cell_state})
+        # print("a = ", a)
         return a[0], cell_state
 
 
@@ -132,6 +134,7 @@ class Worker(object):
         buffer_s, buffer_a, buffer_r = [], [], []
         while not COORD.should_stop() and GLOBAL_EP < MAX_GLOBAL_EP:
             s = self.env.reset()
+            print(self.name)
             ep_r = 0
             rnn_state = SESS.run(self.AC.init_state)    # zero rnn state at beginning
             keep_state = rnn_state.copy()       # keep rnn state for updating global net
@@ -146,7 +149,11 @@ class Worker(object):
                 ep_r += r
                 buffer_s.append(s)
                 buffer_a.append(a)
-                buffer_r.append((r+8)/8)    # normalize
+                buffer_r.append((r+8) / 8)    # normalize
+
+                # if self.name == 'W_0':
+                #     print(r)
+                #     print("rewards = " + str(buffer_r))
 
                 if total_step % UPDATE_GLOBAL_ITER == 0 or done:   # update global and assign to local net
                     if done:
@@ -167,6 +174,14 @@ class Worker(object):
                         self.AC.v_target: buffer_v_target,
                         self.AC.init_state: keep_state,
                     }
+                    if self.name == 'W_0':
+                        loss_a = SESS.run(self.AC.a_loss, feed_dict)
+                        loss_c = SESS.run(self.AC.c_loss, feed_dict)
+                        v_record = SESS.run(self.AC.v, feed_dict)
+                        antLog.write_log('rewards = ' + str(buffer_r), "RNN_example")
+                        antLog.write_log("v = " + str(v_record), "RNN_example")
+                        antLog.write_log("v_s_ = " + str(buffer_v_target), "RNN_example")
+                        antLog.write_log("loss_a = %f, loss_c = %f" % (loss_a, loss_c), "RNN_example")
 
                     self.AC.update_global(feed_dict)
                     buffer_s, buffer_a, buffer_r = [], [], []

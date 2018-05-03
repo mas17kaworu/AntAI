@@ -7,17 +7,17 @@ import antLog
 import Constants
 
 GLOBAL_NET_SCOPE = 'global_net'
-UPDATE_GLOBAL_ITER = 1
+UPDATE_GLOBAL_ITER = 10
 
-GAMMA = 0.9
-ENTROPY_BETA = 0.001
-LR_A = 0.00000001    # learning rate for actor
-LR_C = 0.0000001    # learning rate for critic
+GAMMA = 0.95
+ENTROPY_BETA = 0.01
+LR_A = 0.000000001    # learning rate for actor
+LR_C = 0.00000001    # learning rate for critic
 
-MAX_GLOBAL_EP = 500
+MAX_GLOBAL_EP = 1000
 GLOBAL_RUNNING_R = []
 GLOBAL_EP = 0
-THREAD_NUM = 4
+THREAD_NUM = 6
 
 load_model = False
 SAVE_PER_EPISODE = 50
@@ -27,8 +27,8 @@ env = EnvTest.AntEnv("-1")
 N_S = env.observation_space_shape
 N_A = env.action_space_num
 
-SMALL_MAP_WIDTH = 7
-SMALL_MAP_HEIGHT = 7
+SMALL_MAP_WIDTH = 5
+SMALL_MAP_HEIGHT = 5
 N_S_ACTOR = SMALL_MAP_WIDTH * SMALL_MAP_HEIGHT
 
 
@@ -77,22 +77,23 @@ class ACNet(object):
                     self.update_c_op = opt_c.apply_gradients(zip(self.c_grads, global_net.c_params))
 
     def _build_net(self, scope):
-        w_init = tf.random_normal_initializer(0., 1.0)
+        w_init = tf.random_normal_initializer(0., 0.1)
         with tf.variable_scope('critic'):  # only critic controls the cnn update
             image_in = tf.reshape(self.s, [-1, SMALL_MAP_WIDTH, SMALL_MAP_HEIGHT, 1])
             conv_1 = slim.conv2d(activation_fn=tf.nn.elu,
                                  inputs=image_in,
-                                 num_outputs=16,
+                                 num_outputs=32,
                                  kernel_size=[3, 3],
                                  stride=[1, 1])
             conv_2 = slim.conv2d(activation_fn=tf.nn.elu,
                                  inputs=conv_1,
-                                 num_outputs=32,
+                                 num_outputs=64,
                                  kernel_size=[3, 3],
                                  stride=[1, 1])
             after_cnn = slim.flatten(conv_2)
             print(after_cnn)
-            hidden_c = slim.fully_connected(slim.flatten(conv_2), 2048, activation_fn=tf.nn.elu)
+            hidden_c = slim.fully_connected(slim.flatten(conv_2), 2048, activation_fn=tf.nn.relu)
+            # l_c = tf.layers.dense(hidden_c, 100, tf.nn.relu6, kernel_initializer=w_init, name='lc')
             v = tf.layers.dense(hidden_c, 1, kernel_initializer=w_init, name='v')  # state value
             # l_a = tf.layers.dense(self.s_actor, 200, tf.nn.relu6, kernel_initializer=w_init, name='la')
             # l_a2 = tf.layers.dense(l_a, 200, tf.nn.relu6, kernel_initializer=w_init, name='la2')
@@ -103,8 +104,18 @@ class ACNet(object):
             # v = tf.layers.dense(l_c2, 1, kernel_initializer=w_init, name='v')  # state value
 
         with tf.variable_scope('actor'):
-            hidden_a = slim.fully_connected(slim.flatten(conv_2), 2048, activation_fn=tf.nn.elu)
-
+            conv_a1 = slim.conv2d(activation_fn=tf.nn.elu,
+                                 inputs=image_in,
+                                 num_outputs=32,
+                                 kernel_size=[3, 3],
+                                 stride=[1, 1])
+            conv_a2 = slim.conv2d(activation_fn=tf.nn.elu,
+                                 inputs=conv_a1,
+                                 num_outputs=64,
+                                 kernel_size=[3, 3],
+                                 stride=[1, 1])
+            hidden_a = slim.fully_connected(slim.flatten(conv_a2), 2048, activation_fn=tf.nn.relu)
+            # l_a = tf.layers.dense(hidden_c, 200, tf.nn.relu6, kernel_initializer=w_init, name='la')
             a_prob = slim.fully_connected(hidden_a, N_A, activation_fn=tf.nn.softmax)
 
         a_params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope + '/actor')
@@ -117,7 +128,6 @@ class ACNet(object):
         antLog.write_log('prob = ' + str(prob_weights), "Prob")
         # print("prob", prob_weights)
         action = np.random.choice(range(prob_weights.shape[1]), p=prob_weights.ravel())  # select action w.r.t the actions prob
-
         return action
 
     def update_global(self, feed_dict):  # run by a local
@@ -167,19 +177,20 @@ class Worker(object):
         global GLOBAL_RUNNING_R, GLOBAL_EP
         print('Start Worker: ', self.task_index)
         total_step = 1
-        buffer_s, buffer_a, buffer_r = [], [], []
+        buffer_s, buffer_a, buffer_r, buffer_v_target = [], [], [], []
         # for _ in range(1):
         while not(COORD.should_stop()) and (GLOBAL_EP < MAX_GLOBAL_EP):
             state_map, ants_loc, game_done = self.env.reset()
             # print("worker", self.task_index, "receive first state", state_map)
             steps_num = 1
+            ants_steps = 1
             max_ants_num = 0
             ep_r = 0
             actions_queue = []
             # self.ants = ants_loc
             while not game_done:
                 # print('start a new step')
-                next_locs = []
+                i_tmp3 = 0
                 for loc in ants_loc:
                     # get state for each ant
                     s_a = get_ant_state(state_map, loc)
@@ -188,8 +199,10 @@ class Worker(object):
                     action_normal = action.tolist()
                     actions_queue.append(loc)
                     actions_queue.append(action_normal)
-                    buffer_a.append(action)
-                    buffer_s.append(s_a)
+                    if i_tmp3 == 0:  # only trace first ant
+                        buffer_a.append(action)
+                        buffer_s.append(s_a)
+                    i_tmp3 += 1
 
                 # print("actions ", actions_queue)
                 state_map_, ants_loc_, rewards, game_done, loc_dict = self.env.step(actions_queue)
@@ -204,38 +217,42 @@ class Worker(object):
                     antLog.write_log('reward = ' + str(rewards), "Task0Summary")
                 if not game_done:
                     for loc in ants_loc:
-                        buffer_r.append(rewards[loc])  # choose the right reward, then put it into queue
+                        buffer_r.append(rewards[loc] / 10)  # choose the right reward, then put it into queue
                         ep_r += rewards[loc]
 
+                        break  # only trace first ant
+                else:
+                    buffer_r.append(0)
+                # print("buffer_r" + str(buffer_r))
                 # do update N-Network
-                if total_step % UPDATE_GLOBAL_ITER == 0 or rewards[-1] == Constants.DEAD_ANT_REWARD or game_done:
+                if steps_num % UPDATE_GLOBAL_ITER == 0 or buffer_r[-1] == Constants.DEAD_ANT_REWARD or game_done:
+                    ants_steps = 1
                     buffer_s_next = []
+                    # print("buffer_r" + str(buffer_r))
                     if game_done:
-                        v_s_ = buffer_s[-1]
+                        v_s_ = buffer_s[-1]  # todo game done ?
                     else:
                         for loc in ants_loc:  # some Ants has dead
                             next_loc = loc_dict[loc]
                             s_a_ = get_ant_state(state_map_, next_loc)
-
                             buffer_s_next.append(s_a_)
+                            # print("s_a_" + str(s_a_))
                             break  #
                         # print(str(buffer_s_next))
-                        v_s_ = SESS.run(self.AC.v, {self.AC.s: np.vstack(buffer_s_next)})  # RNN? use s_a in one step
+                        v_s_ = SESS.run(self.AC.v, {self.AC.s: np.vstack(buffer_s_next)})[0, 0]  # RNN? use s_a in one step
                         # print("value from net ", v_s_)
 
                     buffer_v_target = []
-
-                    i2 = 0
                     # print("value from net ", v_s_)
                     if not game_done:
-                        for r in buffer_r:
-                            if r == Constants.DEAD:  # -100 represent ant dead
-                                v_s_[i2] = r
+                        for r in buffer_r[::-1]:
+                            if r == Constants.DEAD:
+                                v_s_ = r
                             else:
-                                v_s_[i2] = r + GAMMA * v_s_[i2]
-                            buffer_v_target.append(v_s_[i2])
-                            i2 += 1
-
+                                v_s_ = r + GAMMA * v_s_
+                            buffer_v_target.append(v_s_)
+                        buffer_v_target.reverse()
+                        # print("buffer_v_target" + str(buffer_v_target))
                         buffer_s, buffer_a, buffer_v_target = np.vstack(buffer_s), np.array(buffer_a), np.vstack(buffer_v_target)
                         feed_dict = {
                             self.AC.s: buffer_s,
@@ -247,27 +264,29 @@ class Worker(object):
                             loss_c = SESS.run(self.AC.c_loss, feed_dict)
                             v_record = SESS.run(self.AC.v, feed_dict)
 
+                            antLog.write_log('rewards = ' + str(buffer_r), "Task0Summary")
                             antLog.write_log("v = " + str(v_record), "Task0Summary")
-                            antLog.write_log("v_s_ = " + str(v_s_), "Task0Summary")
+                            antLog.write_log("v_s_ = " + str(buffer_v_target), "Task0Summary")
                             antLog.write_log("loss_a = %f, loss_c = %f" % (loss_a, loss_c), "Task0Summary")
                             # antLog.write_log('td =' + str(td), "Task0Summary")
 
                         self.AC.update_global(feed_dict)
-                        buffer_s, buffer_a, buffer_r = [], [], []
+                        buffer_s, buffer_a, buffer_r, buffer_v_target = [], [], [], []
                         self.AC.pull_global()
                     elif self.task_index == 0:
                         antLog.write_log("Game Done", "Task0Summary")
                 actions_queue.clear()
                 steps_num += 1
+                ants_steps += 1
                 # print(steps_num)
                 state_map = state_map_
                 ants_loc = ants_loc_
 
                 if game_done:
                     GLOBAL_EP += 1
-
+                    buffer_s, buffer_a, buffer_r, buffer_v_target = [], [], [], []
                     antLog.write_log('max_ants_num = ' + str(max_ants_num), "Total")
-                    print("worker ", self.task_name, " max_ants_num = ", max_ants_num
+                    print("worker ", self.task_name, " max_ants_num = ", max_ants_num, "er_r = ", ep_r
                           , "GLOBAL_EP = ", GLOBAL_EP)
                     max_ants_num = 0
 
@@ -286,8 +305,8 @@ if __name__ == "__main__":
 
     with tf.device("/cpu:0"):
 
-        opt_a = tf.train.AdamOptimizer(LR_A, name='RMSPropA')  #RMSPropOptimizer
-        opt_c = tf.train.AdamOptimizer(LR_C, name='RMSPropC')
+        opt_a = tf.train.RMSPropOptimizer(LR_A, name='RMSPropA')  #RMSPropOptimizer
+        opt_c = tf.train.RMSPropOptimizer(LR_C, name='RMSPropC')
         global_net = ACNet(GLOBAL_NET_SCOPE)
         workers = []
         # Create Worker
