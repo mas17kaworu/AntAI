@@ -9,7 +9,7 @@ import Constants
 
 Start_play_command = 'D:\Python27\python tools/playgame.py "python %s" "python tools/sample_bots/python/HunterBot.py"  ' \
                      '--map_file "tools/maps/example/tutorial1.map" --log_dir %s --turns 100 --scenario  --nolaunch' \
-                     ' --player_seed 7  --turntime 5000 -e'
+                     ' --player_seed 7  --turntime 3000 -e'
 # --verbose   --nolaunch
 # map:  maze/maze_02p_02.map
 

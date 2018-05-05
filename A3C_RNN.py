@@ -98,6 +98,7 @@ class ACNet(object):
             outputs, self.final_state = tf.nn.dynamic_rnn(
                 cell=rnn_cell, inputs=s, initial_state=self.init_state, time_major=True)
             cell_out = tf.reshape(outputs, [-1, cell_size], name='flatten_rnn_outputs')  # joined state representation
+
             l_c = tf.layers.dense(cell_out, 50, tf.nn.relu6, kernel_initializer=w_init, name='lc')
             v = tf.layers.dense(l_c, 1, kernel_initializer=w_init, name='v')  # state value
 
@@ -134,7 +135,7 @@ class Worker(object):
         buffer_s, buffer_a, buffer_r = [], [], []
         while not COORD.should_stop() and GLOBAL_EP < MAX_GLOBAL_EP:
             s = self.env.reset()
-            print(self.name)
+            # print(self.name)
             ep_r = 0
             rnn_state = SESS.run(self.AC.init_state)    # zero rnn state at beginning
             keep_state = rnn_state.copy()       # keep rnn state for updating global net
@@ -153,7 +154,7 @@ class Worker(object):
 
                 # if self.name == 'W_0':
                 #     print(r)
-                #     print("rewards = " + str(buffer_r))
+                    # print("rewards = " + str(buffer_r))
 
                 if total_step % UPDATE_GLOBAL_ITER == 0 or done:   # update global and assign to local net
                     if done:
@@ -165,8 +166,10 @@ class Worker(object):
                         v_s_ = r + GAMMA * v_s_
                         buffer_v_target.append(v_s_)
                     buffer_v_target.reverse()
-
+                    # print("buffer_r = ", buffer_r)
+                    # print("buffer_v = ", buffer_v_target)
                     buffer_s, buffer_a, buffer_v_target = np.vstack(buffer_s), np.vstack(buffer_a), np.vstack(buffer_v_target)
+                    # print("vstack ", buffer_v_target)
 
                     feed_dict = {
                         self.AC.s: buffer_s,

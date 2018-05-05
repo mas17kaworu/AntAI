@@ -5,16 +5,17 @@ import EnvTest
 import threading
 import antLog
 import Constants
+import time
 
 GLOBAL_NET_SCOPE = 'global_net'
-UPDATE_GLOBAL_ITER = 10
+UPDATE_GLOBAL_ITER = 30
 
 GAMMA = 0.9
 ENTROPY_BETA = 0.01
 LR_A = 0.000000001    # learning rate for actor
 LR_C = 0.00000001    # learning rate for critic
 
-MAX_GLOBAL_EP = 1000
+MAX_GLOBAL_EP = 3000
 GLOBAL_RUNNING_R = []
 GLOBAL_EP = 0
 THREAD_NUM = 1
@@ -92,9 +93,30 @@ class ACNet(object):
                                  stride=[1, 1])
             after_cnn = slim.flatten(conv_2)
             print(after_cnn)
-            hidden_c = slim.fully_connected(slim.flatten(conv_2), 2048, activation_fn=tf.nn.relu)
+            hidden = slim.fully_connected(slim.flatten(conv_2), 256, activation_fn=tf.nn.relu)
+
+            # RNN Cell
+            cell_size = 256
+            lstm_cell = tf.contrib.rnn.BasicLSTMCell(cell_size, state_is_tuple=True)
+            # c_init = np.zeros((1, lstm_cell.state_size.c), np.float32)
+            # h_init = np.zeros((1, lstm_cell.state_size.h), np.float32)
+            self.state_init = [np.zeros((1, lstm_cell.state_size.c), np.float32),
+                               np.zeros((1, lstm_cell.state_size.h), np.float32)]
+            c_in = tf.placeholder(tf.float32, [1, lstm_cell.state_size.c])
+            h_in = tf.placeholder(tf.float32, [1, lstm_cell.state_size.h])
+            self.state_in = (c_in, h_in)
+            rnn_in = tf.expand_dims(hidden, [0])
+            step_size = tf.shape(image_in)[:1]
+            state_in = tf.contrib.rnn.LSTMStateTuple(c_in, h_in)
+            lstm_outputs, lstm_state = tf.nn.dynamic_rnn(
+                lstm_cell, rnn_in, initial_state=state_in, sequence_length=step_size,
+                time_major=False)
+            lstm_c, lstm_h = lstm_state
+            self.state_out = (lstm_c[:1, :], lstm_h[:1, :])
+            rnn_out = tf.reshape(lstm_outputs, [-1, cell_size])
+
             # l_c = tf.layers.dense(hidden_c, 100, tf.nn.relu6, kernel_initializer=w_init, name='lc')
-            v = tf.layers.dense(hidden_c, 1, kernel_initializer=w_init, name='v')  # state value
+            v = tf.layers.dense(rnn_out, 1, kernel_initializer=w_init, name='v')  # state value
             # l_a = tf.layers.dense(self.s_actor, 200, tf.nn.relu6, kernel_initializer=w_init, name='la')
             # l_a2 = tf.layers.dense(l_a, 200, tf.nn.relu6, kernel_initializer=w_init, name='la2')
             # a_prob = tf.layers.dense(l_a2, N_A, tf.nn.softmax, kernel_initializer=w_init, name='ap')
@@ -104,31 +126,21 @@ class ACNet(object):
             # v = tf.layers.dense(l_c2, 1, kernel_initializer=w_init, name='v')  # state value
 
         with tf.variable_scope('actor'):
-            # conv_a1 = slim.conv2d(activation_fn=tf.nn.elu,
-            #                      inputs=image_in,
-            #                      num_outputs=32,
-            #                      kernel_size=[3, 3],
-            #                      stride=[1, 1])
-            # conv_a2 = slim.conv2d(activation_fn=tf.nn.elu,
-            #                      inputs=conv_a1,
-            #                      num_outputs=64,
-            #                      kernel_size=[3, 3],
-            #                      stride=[1, 1])
-            hidden_a = slim.fully_connected(slim.flatten(conv_2), 2048, activation_fn=tf.nn.relu)
             # l_a = tf.layers.dense(hidden_c, 200, tf.nn.relu6, kernel_initializer=w_init, name='la')
-            a_prob = slim.fully_connected(hidden_a, N_A, activation_fn=tf.nn.softmax)
+            a_prob = slim.fully_connected(rnn_out, N_A, activation_fn=tf.nn.softmax)
 
         a_params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope + '/actor')
         c_params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope + '/critic')
         return a_prob, v, a_params, c_params
 
-    def choose_action(self, s):  # run by a local
-        prob_weights = SESS.run(self.a_prob, feed_dict={self.s: s[np.newaxis, :]})
+    def choose_action(self, s, cell_state):  # run by a local
+        prob_weights, cell_state = SESS.run([self.a_prob, self.state_out],
+                                            feed_dict={self.s: s[np.newaxis, :], self.state_init: cell_state})
         # print("s shape = ", s.shape)
         antLog.write_log('prob = ' + str(prob_weights), "Prob")
         # print("prob", prob_weights)
         action = np.random.choice(range(prob_weights.shape[1]), p=prob_weights.ravel())  # select action w.r.t the actions prob
-        return action
+        return action, cell_state
 
     def update_global(self, feed_dict):  # run by a local
         SESS.run([self.update_a_op, self.update_c_op], feed_dict)  # local grads applies to global net
@@ -189,18 +201,23 @@ class Worker(object):
             next_loc = ants_loc[0]
             loc_last = None
             actions_queue = []
+            rnn_state = SESS.run(self.AC.state_init)
+            # self.batch_rnn_state = rnn_state
+            keep_state = rnn_state.copy()
             # self.ants = ants_loc
             while not game_done:
                 # print('start a new step')
                 # print("ants_loc", ants_loc)
                 # print("next_loc = ", next_loc)
+                flag_not_dead = False
+
                 for loc in ants_loc:
                     if loc == next_loc:  # only trace first ant
                         # print("loc = nextloc", loc)
                         # get state for each ant
                         s_a = get_ant_state(state_map, loc)
                         # get action for each ant
-                        action = self.AC.choose_action(s_a)
+                        action, rnn_state_ = self.AC.choose_action(s_a, rnn_state)
                         action_normal = action.tolist()
                         loc_last = loc
                         buffer_a.append(action)
@@ -208,23 +225,30 @@ class Worker(object):
 
                         actions_queue.append(loc)
                         actions_queue.append(action_normal)
+                        flag_not_dead = True
                     else:
                         actions_queue.append(loc)
                         actions_queue.append(0)  # don't move
 
                 # print("actions ", actions_queue)
-                state_map_, ants_loc_, rewards, game_done, loc_dict = self.env.step(actions_queue)
+                if flag_not_dead:
+                    state_map_, ants_loc_, rewards, game_done, loc_dict = self.env.step(actions_queue)
+                else:
+                    rewards = [0]
+                    game_done = True
+                    print("ant dead")
+                    time.sleep(3.5)
                 if max_ants_num < len(rewards):
                     max_ants_num = len(rewards)
-                print("ants_loc", ants_loc)
-                print("ants_loc_", ants_loc_)
-                print("loc_dict", loc_dict)
+                # print("ants_loc", ants_loc)
+                # print("ants_loc_", ants_loc_)
+                # print("loc_dict", loc_dict)
                 if self.task_index == 0:
                     antLog.write_log('GLOBAL_EP = ' + str(GLOBAL_EP), "Task0Summary")
                     antLog.write_log('step = ' + str(steps_num), "Task0Summary")
                     antLog.write_log('actions = ' + str(actions_queue), "Task0Summary")
                     antLog.write_log('new_ants_loc_ = ' + str(ants_loc_), "Task0Summary")
-                    antLog.write_log('reward = ' + str(rewards), "Task0Summary")
+                    # antLog.write_log('reward= ' + str(rewards), "Task0Summary")
                 if not game_done:
                     next_loc = loc_dict[loc_last]
                     for loc in ants_loc:
@@ -241,8 +265,8 @@ class Worker(object):
                     buffer_s_next = []
                     s_a_ = None
                     # print("buffer_r" + str(buffer_r))
-                    if game_done:
-                        v_s_ = 0  # todo game done ?
+                    if game_done or buffer_r[-1] == Constants.DEAD_ANT_REWARD:
+                        v_s_ = 0  # todo game
                     else:
                         for loc in ants_loc:  # some Ants has dead
                             if loc == loc_last:
@@ -251,7 +275,7 @@ class Worker(object):
                                 # print("s_a_" + str(s_a_))
                                 break  #
                         # print(str(buffer_s_next))
-                        v_s_ = SESS.run(self.AC.v, {self.AC.s: s_a_[np.newaxis, :]})[0, 0]  # RNN? use s_a in one step
+                        v_s_ = SESS.run(self.AC.v, {self.AC.s: s_a_[np.newaxis, :], self.AC.state_init : rnn_state_})[0, 0]  # RNN? use s_a in one step
                         # print("value from net ", v_s_)
 
                     buffer_v_target = []
@@ -270,6 +294,7 @@ class Worker(object):
                             self.AC.s: buffer_s,
                             self.AC.a_his: buffer_a,
                             self.AC.v_target: buffer_v_target,
+                            self.AC.state_init: keep_state,
                         }
                         if self.task_index == 0 and steps_num % 1 == 0:
                             loss_a = SESS.run(self.AC.a_loss, feed_dict)
@@ -285,8 +310,13 @@ class Worker(object):
                         self.AC.update_global(feed_dict)
                         buffer_s, buffer_a, buffer_r, buffer_v_target = [], [], [], []
                         self.AC.pull_global()
+                        keep_state = rnn_state_.copy()
                     elif self.task_index == 0:
                         antLog.write_log("Game Done", "Task0Summary")
+                # if not game_done:
+                #     if loc_last not in ants_loc_:
+                #         next_loc = ants_loc_[0]
+
                 actions_queue.clear()
                 steps_num += 1
                 ants_steps += 1
