@@ -8,17 +8,17 @@ import Constants
 import time
 
 GLOBAL_NET_SCOPE = 'global_net'
-UPDATE_GLOBAL_ITER = 30
+UPDATE_GLOBAL_ITER = 50
 
 GAMMA = 0.9
 ENTROPY_BETA = 0.01
-LR_A = 0.000000001    # learning rate for actor
+LR_A = 0.0000000005    # learning rate for actor
 LR_C = 0.00000001    # learning rate for critic
 
 MAX_GLOBAL_EP = 3000
 GLOBAL_RUNNING_R = []
 GLOBAL_EP = 0
-THREAD_NUM = 1
+THREAD_NUM = 6
 
 load_model = False
 SAVE_PER_EPISODE = 50
@@ -28,8 +28,8 @@ env = EnvTest.AntEnv("-1")
 N_S = env.observation_space_shape
 N_A = env.action_space_num
 
-SMALL_MAP_WIDTH = 5
-SMALL_MAP_HEIGHT = 5
+SMALL_MAP_WIDTH = 7
+SMALL_MAP_HEIGHT = 7
 N_S_ACTOR = SMALL_MAP_WIDTH * SMALL_MAP_HEIGHT
 
 
@@ -64,6 +64,8 @@ class ACNet(object):
                     self.a_loss = tf.reduce_mean(-self.exp_v)
                     # self.a_loss = tf.clip_by_value(tf.reduce_mean(-self.exp_v), -0.5, 0.5)  # clip a loss
 
+                # with tf.name_scope('choose_A'):
+                #     self.A = np.random.choice(range(self.a_prob.shape[1]), p=self.a_prob.ravel())
                 with tf.name_scope('local_grad'):
                     self.a_grads = tf.gradients(self.a_loss, self.a_params)
                     self.c_grads = tf.gradients(self.c_loss, self.c_params)
@@ -83,12 +85,12 @@ class ACNet(object):
             image_in = tf.reshape(self.s, [-1, SMALL_MAP_WIDTH, SMALL_MAP_HEIGHT, 1])
             conv_1 = slim.conv2d(activation_fn=tf.nn.elu,
                                  inputs=image_in,
-                                 num_outputs=32,
+                                 num_outputs=16,
                                  kernel_size=[3, 3],
                                  stride=[1, 1])
             conv_2 = slim.conv2d(activation_fn=tf.nn.elu,
                                  inputs=conv_1,
-                                 num_outputs=64,
+                                 num_outputs=32,
                                  kernel_size=[3, 3],
                                  stride=[1, 1])
             after_cnn = slim.flatten(conv_2)
@@ -97,26 +99,16 @@ class ACNet(object):
 
             # RNN Cell
             cell_size = 256
-            lstm_cell = tf.contrib.rnn.BasicLSTMCell(cell_size, state_is_tuple=True)
-            # c_init = np.zeros((1, lstm_cell.state_size.c), np.float32)
-            # h_init = np.zeros((1, lstm_cell.state_size.h), np.float32)
-            self.state_init = [np.zeros((1, lstm_cell.state_size.c), np.float32),
-                               np.zeros((1, lstm_cell.state_size.h), np.float32)]
-            c_in = tf.placeholder(tf.float32, [1, lstm_cell.state_size.c])
-            h_in = tf.placeholder(tf.float32, [1, lstm_cell.state_size.h])
-            self.state_in = (c_in, h_in)
-            rnn_in = tf.expand_dims(hidden, [0])
-            step_size = tf.shape(image_in)[:1]
-            state_in = tf.contrib.rnn.LSTMStateTuple(c_in, h_in)
-            lstm_outputs, lstm_state = tf.nn.dynamic_rnn(
-                lstm_cell, rnn_in, initial_state=state_in, sequence_length=step_size,
-                time_major=False)
-            lstm_c, lstm_h = lstm_state
-            self.state_out = (lstm_c[:1, :], lstm_h[:1, :])
-            rnn_out = tf.reshape(lstm_outputs, [-1, cell_size])
+            rnn_input = tf.expand_dims(hidden, axis=1,
+                               name='timely_input')  # [time_step, feature] => [time_step, batch, feature]
+            rnn_cell = tf.contrib.rnn.BasicRNNCell(cell_size)
+            self.init_state = rnn_cell.zero_state(batch_size=1, dtype=tf.float32)
+            outputs, self.final_state = tf.nn.dynamic_rnn(
+                cell=rnn_cell, inputs=rnn_input, initial_state=self.init_state, time_major=True)
+            cell_out = tf.reshape(outputs, [-1, cell_size], name='flatten_rnn_outputs')  # joined state representation
 
             # l_c = tf.layers.dense(hidden_c, 100, tf.nn.relu6, kernel_initializer=w_init, name='lc')
-            v = tf.layers.dense(rnn_out, 1, kernel_initializer=w_init, name='v')  # state value
+            v = tf.layers.dense(cell_out, 1, kernel_initializer=w_init, name='v')  # state value
             # l_a = tf.layers.dense(self.s_actor, 200, tf.nn.relu6, kernel_initializer=w_init, name='la')
             # l_a2 = tf.layers.dense(l_a, 200, tf.nn.relu6, kernel_initializer=w_init, name='la2')
             # a_prob = tf.layers.dense(l_a2, N_A, tf.nn.softmax, kernel_initializer=w_init, name='ap')
@@ -127,15 +119,15 @@ class ACNet(object):
 
         with tf.variable_scope('actor'):
             # l_a = tf.layers.dense(hidden_c, 200, tf.nn.relu6, kernel_initializer=w_init, name='la')
-            a_prob = slim.fully_connected(rnn_out, N_A, activation_fn=tf.nn.softmax)
+            a_prob = slim.fully_connected(cell_out, N_A, activation_fn=tf.nn.softmax)
 
         a_params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope + '/actor')
         c_params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope + '/critic')
         return a_prob, v, a_params, c_params
 
     def choose_action(self, s, cell_state):  # run by a local
-        prob_weights, cell_state = SESS.run([self.a_prob, self.state_out],
-                                            feed_dict={self.s: s[np.newaxis, :], self.state_init: cell_state})
+        prob_weights, cell_state = SESS.run([self.a_prob, self.final_state],
+                                            feed_dict={self.s: s[np.newaxis, :], self.init_state: cell_state})
         # print("s shape = ", s.shape)
         antLog.write_log('prob = ' + str(prob_weights), "Prob")
         # print("prob", prob_weights)
@@ -182,7 +174,7 @@ class Worker(object):
                     small_map[n][m] = map_[x][y]
                     y += 1
                 x += 1
-            # print(small_map)
+            # antLog.write_log('small_map = ' + str(small_map), "Task0Summary")
             small_map = small_map.flatten()
             return small_map
 
@@ -201,7 +193,7 @@ class Worker(object):
             next_loc = ants_loc[0]
             loc_last = None
             actions_queue = []
-            rnn_state = SESS.run(self.AC.state_init)
+            rnn_state = SESS.run(self.AC.init_state)
             # self.batch_rnn_state = rnn_state
             keep_state = rnn_state.copy()
             # self.ants = ants_loc
@@ -247,6 +239,7 @@ class Worker(object):
                     antLog.write_log('GLOBAL_EP = ' + str(GLOBAL_EP), "Task0Summary")
                     antLog.write_log('step = ' + str(steps_num), "Task0Summary")
                     antLog.write_log('actions = ' + str(actions_queue), "Task0Summary")
+                    antLog.write_log('rewards = ' + str(rewards), "Task0Summary")
                     antLog.write_log('new_ants_loc_ = ' + str(ants_loc_), "Task0Summary")
                     # antLog.write_log('reward= ' + str(rewards), "Task0Summary")
                 if not game_done:
@@ -275,7 +268,7 @@ class Worker(object):
                                 # print("s_a_" + str(s_a_))
                                 break  #
                         # print(str(buffer_s_next))
-                        v_s_ = SESS.run(self.AC.v, {self.AC.s: s_a_[np.newaxis, :], self.AC.state_init : rnn_state_})[0, 0]  # RNN? use s_a in one step
+                        v_s_ = SESS.run(self.AC.v, {self.AC.s: s_a_[np.newaxis, :], self.AC.init_state: rnn_state_})[0, 0]  # RNN? use s_a in one step
                         # print("value from net ", v_s_)
 
                     buffer_v_target = []
@@ -294,7 +287,7 @@ class Worker(object):
                             self.AC.s: buffer_s,
                             self.AC.a_his: buffer_a,
                             self.AC.v_target: buffer_v_target,
-                            self.AC.state_init: keep_state,
+                            self.AC.init_state: keep_state,
                         }
                         if self.task_index == 0 and steps_num % 1 == 0:
                             loss_a = SESS.run(self.AC.a_loss, feed_dict)
