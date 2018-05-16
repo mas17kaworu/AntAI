@@ -27,7 +27,7 @@ class AntEnv:
     def __init__(self, name):
         self.Env_name = name
         self.observation_space_shape = Constants.MAP_HEIGHT * Constants.MAP_WIDTH   # 43*39=1677   +2
-        self.action_space_num = 5  # Action space  # 0--stay 1--North 2--East 3--South 4--West
+        self.action_space_num = 4  # Action space  # 0--stay 1--North 2--East 3--South 4--West
         cols = 20
         rows = 20
         self.stepNum = 1
@@ -37,6 +37,7 @@ class AntEnv:
         self.ants_loc_list = []
         self.state_queue = Queue()
         self.connection = None
+        self.get_food_number = 0
 
     def reset(self):
         command = ''
@@ -108,14 +109,6 @@ class AntEnv:
         # print("next_ants = ", next_ants)
         # print("shape" + str(next_state.shape))
         if not self.DONE:
-            # increase = len(next_ants) - (len(actions)/2)
-            # if increase == 0:
-            #     reward = 1
-            # elif increase > 0:
-            #     reward = increase * 3
-            # else:
-            #     reward = increase * 2
-
             ant_rewards, loc_dict = self.generate_ant_reward(actions=actions, map_state_next=next_state)
 
             self.stepNum += 1
@@ -191,11 +184,14 @@ class AntEnv:
                 # d = self.distance_to_food(next_target_loc)
 
                 if self.has_eat_food(next_target_loc):
+                    self.get_food_number += 1
                     reward = Constants.GET_FOOD_REWARD
+
                 else:
                     reward = 0
             else:
                 if map_state_next[next_target_loc[0]][next_target_loc[1]] == Constants.DEAD:
+                    self.get_food_number = 0
                     reward = Constants.DEAD_ANT_REWARD
                     loc_dict[loc] = next_target_loc
                 else:
@@ -203,6 +199,7 @@ class AntEnv:
                         reward = 0
                         loc_dict[loc] = loc
                     if map_state_next[loc[0]][loc[1]] == Constants.DEAD:
+                        self.get_food_number = 0
                         reward = Constants.DEAD_ANT_REWARD
                         loc_dict[loc] = loc
             ######################################################################################

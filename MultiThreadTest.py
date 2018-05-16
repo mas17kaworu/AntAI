@@ -8,28 +8,28 @@ import Constants
 import time
 
 GLOBAL_NET_SCOPE = 'global_net'
-UPDATE_GLOBAL_ITER = 50
+UPDATE_GLOBAL_ITER = 30
 
 GAMMA = 0.9
-ENTROPY_BETA = 0.01
-LR_A = 0.0000000005    # learning rate for actor
-LR_C = 0.00000001    # learning rate for critic
+ENTROPY_BETA = 0.001
+LR_A = 0.001    # learning rate for actor
+LR_C = 0.0001    # learning rate for critic
 
-MAX_GLOBAL_EP = 3000
+MAX_GLOBAL_EP = 5000
 GLOBAL_RUNNING_R = []
 GLOBAL_EP = 0
 THREAD_NUM = 6
 
 load_model = False
-SAVE_PER_EPISODE = 50
+SAVE_PER_EPISODE = 100
 SHOULD_SAVE = True
 
 env = EnvTest.AntEnv("-1")
 N_S = env.observation_space_shape
 N_A = env.action_space_num
 
-SMALL_MAP_WIDTH = 7
-SMALL_MAP_HEIGHT = 7
+SMALL_MAP_WIDTH = 5
+SMALL_MAP_HEIGHT = 5
 N_S_ACTOR = SMALL_MAP_WIDTH * SMALL_MAP_HEIGHT
 
 
@@ -85,20 +85,21 @@ class ACNet(object):
             image_in = tf.reshape(self.s, [-1, SMALL_MAP_WIDTH, SMALL_MAP_HEIGHT, 1])
             conv_1 = slim.conv2d(activation_fn=tf.nn.elu,
                                  inputs=image_in,
-                                 num_outputs=16,
-                                 kernel_size=[3, 3],
-                                 stride=[1, 1])
-            conv_2 = slim.conv2d(activation_fn=tf.nn.elu,
-                                 inputs=conv_1,
-                                 num_outputs=32,
-                                 kernel_size=[3, 3],
-                                 stride=[1, 1])
-            after_cnn = slim.flatten(conv_2)
+                                 num_outputs=64,
+                                 kernel_size=[5, 5],
+                                 stride=[1, 1],
+                                 padding="VALID")
+            # conv_2 = slim.conv2d(activation_fn=tf.nn.elu,
+            #                      inputs=conv_1,
+            #                      num_outputs=32,
+            #                      kernel_size=[3, 3],
+            #                      stride=[1, 1])
+            after_cnn = slim.flatten(conv_1)
             print(after_cnn)
-            hidden = slim.fully_connected(slim.flatten(conv_2), 256, activation_fn=tf.nn.relu)
+            hidden = slim.fully_connected(slim.flatten(conv_1), 80, activation_fn=tf.nn.relu)
 
             # RNN Cell
-            cell_size = 256
+            cell_size = 80
             rnn_input = tf.expand_dims(hidden, axis=1,
                                name='timely_input')  # [time_step, feature] => [time_step, batch, feature]
             rnn_cell = tf.contrib.rnn.BasicRNNCell(cell_size)
@@ -107,8 +108,8 @@ class ACNet(object):
                 cell=rnn_cell, inputs=rnn_input, initial_state=self.init_state, time_major=True)
             cell_out = tf.reshape(outputs, [-1, cell_size], name='flatten_rnn_outputs')  # joined state representation
 
-            # l_c = tf.layers.dense(hidden_c, 100, tf.nn.relu6, kernel_initializer=w_init, name='lc')
-            v = tf.layers.dense(cell_out, 1, kernel_initializer=w_init, name='v')  # state value
+            l_c = tf.layers.dense(cell_out, 80, tf.nn.relu6, kernel_initializer=w_init, name='lc')
+            v = tf.layers.dense(l_c, 1, kernel_initializer=w_init, name='v')  # state value
             # l_a = tf.layers.dense(self.s_actor, 200, tf.nn.relu6, kernel_initializer=w_init, name='la')
             # l_a2 = tf.layers.dense(l_a, 200, tf.nn.relu6, kernel_initializer=w_init, name='la2')
             # a_prob = tf.layers.dense(l_a2, N_A, tf.nn.softmax, kernel_initializer=w_init, name='ap')
@@ -118,18 +119,20 @@ class ACNet(object):
             # v = tf.layers.dense(l_c2, 1, kernel_initializer=w_init, name='v')  # state value
 
         with tf.variable_scope('actor'):
-            # l_a = tf.layers.dense(hidden_c, 200, tf.nn.relu6, kernel_initializer=w_init, name='la')
-            a_prob = slim.fully_connected(cell_out, N_A, activation_fn=tf.nn.softmax)
+            l_a = tf.layers.dense(cell_out, 40, tf.nn.relu6, kernel_initializer=w_init, name='la')
+            a_prob = slim.fully_connected(l_a, N_A, activation_fn=tf.nn.softmax)
 
         a_params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope + '/actor')
         c_params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope + '/critic')
         return a_prob, v, a_params, c_params
 
-    def choose_action(self, s, cell_state):  # run by a local
+    def choose_action(self, s, cell_state, task_index):  # run by a local
         prob_weights, cell_state = SESS.run([self.a_prob, self.final_state],
                                             feed_dict={self.s: s[np.newaxis, :], self.init_state: cell_state})
         # print("s shape = ", s.shape)
-        antLog.write_log('prob = ' + str(prob_weights), "Prob")
+        if task_index == 0:
+            antLog.write_log(str(s.reshape([SMALL_MAP_WIDTH, SMALL_MAP_HEIGHT])), "Prob")
+            antLog.write_log('prob = ' + str(prob_weights), "Prob")
         # print("prob", prob_weights)
         action = np.random.choice(range(prob_weights.shape[1]), p=prob_weights.ravel())  # select action w.r.t the actions prob
         return action, cell_state
@@ -190,7 +193,8 @@ class Worker(object):
             ants_steps = 1
             max_ants_num = 0
             ep_r = 0
-            next_loc = ants_loc[0]
+            if not game_done:
+                next_loc = ants_loc[0]
             loc_last = None
             actions_queue = []
             rnn_state = SESS.run(self.AC.init_state)
@@ -209,14 +213,15 @@ class Worker(object):
                         # get state for each ant
                         s_a = get_ant_state(state_map, loc)
                         # get action for each ant
-                        action, rnn_state_ = self.AC.choose_action(s_a, rnn_state)
+                        action, rnn_state_ = self.AC.choose_action(s_a, rnn_state, self.task_index)
+
                         action_normal = action.tolist()
                         loc_last = loc
                         buffer_a.append(action)
                         buffer_s.append(s_a)
 
                         actions_queue.append(loc)
-                        actions_queue.append(action_normal)
+                        actions_queue.append(action_normal + 1)
                         flag_not_dead = True
                     else:
                         actions_queue.append(loc)
@@ -320,7 +325,7 @@ class Worker(object):
                 if game_done:
                     GLOBAL_EP += 1
                     buffer_s, buffer_a, buffer_r, buffer_v_target = [], [], [], []
-                    antLog.write_log('max_ants_num = ' + str(max_ants_num), "Total")
+                    antLog.write_log('ep_r = ' + str(ep_r), "Total")
                     print("worker ", self.task_name, " max_ants_num = ", max_ants_num, "er_r = ", ep_r
                           , "GLOBAL_EP = ", GLOBAL_EP)
                     max_ants_num = 0
