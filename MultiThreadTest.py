@@ -86,7 +86,7 @@ class ACNet(object):
             conv_1 = slim.conv2d(activation_fn=tf.nn.elu,
                                  inputs=image_in,
                                  num_outputs=64,
-                                 kernel_size=[5, 5],
+                                 kernel_size=[3, 3],
                                  stride=[1, 1],
                                  padding="VALID")
             # conv_2 = slim.conv2d(activation_fn=tf.nn.elu,
@@ -96,10 +96,10 @@ class ACNet(object):
             #                      stride=[1, 1])
             after_cnn = slim.flatten(conv_1)
             print(after_cnn)
-            hidden = slim.fully_connected(slim.flatten(conv_1), 80, activation_fn=tf.nn.relu)
+            hidden = slim.fully_connected(slim.flatten(conv_1), 512, activation_fn=tf.nn.relu)
 
             # RNN Cell
-            cell_size = 80
+            cell_size = 256
             rnn_input = tf.expand_dims(hidden, axis=1,
                                name='timely_input')  # [time_step, feature] => [time_step, batch, feature]
             rnn_cell = tf.contrib.rnn.BasicRNNCell(cell_size)
@@ -108,7 +108,7 @@ class ACNet(object):
                 cell=rnn_cell, inputs=rnn_input, initial_state=self.init_state, time_major=True)
             cell_out = tf.reshape(outputs, [-1, cell_size], name='flatten_rnn_outputs')  # joined state representation
 
-            l_c = tf.layers.dense(cell_out, 80, tf.nn.relu6, kernel_initializer=w_init, name='lc')
+            l_c = tf.layers.dense(cell_out, 256, tf.nn.relu6, kernel_initializer=w_init, name='lc')
             v = tf.layers.dense(l_c, 1, kernel_initializer=w_init, name='v')  # state value
             # l_a = tf.layers.dense(self.s_actor, 200, tf.nn.relu6, kernel_initializer=w_init, name='la')
             # l_a2 = tf.layers.dense(l_a, 200, tf.nn.relu6, kernel_initializer=w_init, name='la2')
@@ -119,7 +119,7 @@ class ACNet(object):
             # v = tf.layers.dense(l_c2, 1, kernel_initializer=w_init, name='v')  # state value
 
         with tf.variable_scope('actor'):
-            l_a = tf.layers.dense(cell_out, 40, tf.nn.relu6, kernel_initializer=w_init, name='la')
+            l_a = tf.layers.dense(cell_out, 128, tf.nn.relu6, kernel_initializer=w_init, name='la')
             a_prob = slim.fully_connected(l_a, N_A, activation_fn=tf.nn.softmax)
 
         a_params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope + '/actor')
