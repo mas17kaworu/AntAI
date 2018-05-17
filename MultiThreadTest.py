@@ -11,8 +11,8 @@ GLOBAL_NET_SCOPE = 'global_net'
 UPDATE_GLOBAL_ITER = 30
 
 GAMMA = 0.9
-ENTROPY_BETA = 0.001
-LR_A = 0.001    # learning rate for actor
+ENTROPY_BETA = 0.01
+LR_A = 0.0001    # learning rate for actor
 LR_C = 0.0001    # learning rate for critic
 
 MAX_GLOBAL_EP = 5000
