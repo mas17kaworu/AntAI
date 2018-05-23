@@ -6,14 +6,16 @@ import threading
 import antLog
 import Constants
 import time
+import shutil
+import datetime
 
 GLOBAL_NET_SCOPE = 'global_net'
-UPDATE_GLOBAL_ITER = 30
+UPDATE_GLOBAL_ITER = 20
 
 GAMMA = 0.9
-ENTROPY_BETA = 0.01
-LR_A = 0.0001    # learning rate for actor
-LR_C = 0.0001    # learning rate for critic
+ENTROPY_BETA = 0.0001
+LR_A = 0.001    # learning rate for actor
+LR_C = 0.001    # learning rate for critic
 
 MAX_GLOBAL_EP = 5000
 GLOBAL_RUNNING_R = []
@@ -28,8 +30,8 @@ env = EnvTest.AntEnv("-1")
 N_S = env.observation_space_shape
 N_A = env.action_space_num
 
-SMALL_MAP_WIDTH = 5
-SMALL_MAP_HEIGHT = 5
+SMALL_MAP_WIDTH = 7
+SMALL_MAP_HEIGHT = 7
 N_S_ACTOR = SMALL_MAP_WIDTH * SMALL_MAP_HEIGHT
 
 
@@ -89,14 +91,20 @@ class ACNet(object):
                                  kernel_size=[3, 3],
                                  stride=[1, 1],
                                  padding="VALID")
+            # print("after cnn1")
+            # print(conv_1)
             # conv_2 = slim.conv2d(activation_fn=tf.nn.elu,
             #                      inputs=conv_1,
-            #                      num_outputs=32,
+            #                      num_outputs=128,
             #                      kernel_size=[3, 3],
-            #                      stride=[1, 1])
+            #                      stride=[1, 1],
+            #                      padding="VALID")
+            # print("after cnn2")
+            # print(conv_2)
             after_cnn = slim.flatten(conv_1)
+            print("after cnn = ")
             print(after_cnn)
-            hidden = slim.fully_connected(slim.flatten(conv_1), 512, activation_fn=tf.nn.relu)
+            hidden = slim.fully_connected(after_cnn, 256, activation_fn=tf.nn.relu)
 
             # RNN Cell
             cell_size = 256
@@ -108,7 +116,8 @@ class ACNet(object):
                 cell=rnn_cell, inputs=rnn_input, initial_state=self.init_state, time_major=True)
             cell_out = tf.reshape(outputs, [-1, cell_size], name='flatten_rnn_outputs')  # joined state representation
 
-            l_c = tf.layers.dense(cell_out, 256, tf.nn.relu6, kernel_initializer=w_init, name='lc')
+            l_c = tf.layers.dense(cell_out, 128, tf.nn.relu6, kernel_initializer=w_init, name='lc')
+            # l_c_2 = tf.layers.dense(l_c, 128, tf.nn.relu6, kernel_initializer=w_init, name='lc2')
             v = tf.layers.dense(l_c, 1, kernel_initializer=w_init, name='v')  # state value
             # l_a = tf.layers.dense(self.s_actor, 200, tf.nn.relu6, kernel_initializer=w_init, name='la')
             # l_a2 = tf.layers.dense(l_a, 200, tf.nn.relu6, kernel_initializer=w_init, name='la2')
@@ -120,7 +129,8 @@ class ACNet(object):
 
         with tf.variable_scope('actor'):
             l_a = tf.layers.dense(cell_out, 128, tf.nn.relu6, kernel_initializer=w_init, name='la')
-            a_prob = slim.fully_connected(l_a, N_A, activation_fn=tf.nn.softmax)
+            l_a_2 = tf.layers.dense(l_a, 64, tf.nn.relu6, kernel_initializer=w_init, name='la2')
+            a_prob = slim.fully_connected(l_a_2, N_A, activation_fn=tf.nn.softmax)
 
         a_params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope + '/actor')
         c_params = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope + '/critic')
@@ -326,6 +336,11 @@ class Worker(object):
                     GLOBAL_EP += 1
                     buffer_s, buffer_a, buffer_r, buffer_v_target = [], [], [], []
                     antLog.write_log('ep_r = ' + str(ep_r), "Total")
+                    if ep_r > 20:  # save replay file
+                        now = datetime.datetime.now()
+                        time_string = str(now.isoformat())
+                        shutil.copy("./ant_log_W_" + str(self.task_index + 1) + "/0.replay",
+                                    "./replay_saved/" + time_string.replace(':', '-') + "-"+ str(ep_r) + ".txt")
                     print("worker ", self.task_name, " max_ants_num = ", max_ants_num, "er_r = ", ep_r
                           , "GLOBAL_EP = ", GLOBAL_EP)
                     max_ants_num = 0

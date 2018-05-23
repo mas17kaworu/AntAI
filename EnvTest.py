@@ -7,11 +7,11 @@ import threading
 import antLog
 import Constants
 
-Start_play_command = 'D:\Python27\python tools/playgame.py "python %s" "python tools/sample_bots/python/HunterBot.py"  ' \
-                     '--map_file "tools/maps/example/tutorial1.map" --log_dir %s --turns 100 --scenario  --nolaunch' \
+Start_play_command = 'D:\Python27\python tools\playgame.py "python %s" "python tools/sample_bots/python/HunterBot.py"  ' \
+                     '--map_file "tools/maps/maze/maze_02p_02.map" --log_dir %s --turns 150 --scenario  --nolaunch' \
                      ' --player_seed 7  --turntime 3000 -e'
 # --verbose   --nolaunch
-# map:  maze/maze_02p_02.map
+# map:  tools/maps/maze/maze_02p_02.map  tools/maps/example/tutorial1.map
 
 PORT1 = 12023
 PORT2 = 12025
@@ -157,51 +157,51 @@ class AntEnv:
             next_target_loc = get_next_loc(act, loc)
             loc_dict[loc] = loc
             ######################################################################################
-            # if map_state_next[next_target_loc[0]][next_target_loc[1]] == Constants.MY_ANT\
-            #         or map_state_next[next_target_loc[0]][next_target_loc[1]] == Constants.HILL:
-            #     if loc == next_target_loc:
-            #         reward = -1
-            #     else:
-            #         reward = - 0.5
-            #     loc_dict[loc] = next_target_loc
-            #     if self.has_eat_food(next_target_loc):
-            #         reward = Constants.GET_FOOD_REWARD
-            # else:
-            #     if map_state_next[next_target_loc[0]][next_target_loc[1]] == Constants.DEAD:
-            #         reward = Constants.DEAD_ANT_REWARD
-            #         loc_dict[loc] = next_target_loc
-            #     else:
-            #         if map_state_next[loc[0]][loc[1]] == Constants.MY_ANT:
-            #             reward = -5
-            #             loc_dict[loc] = loc
-            #         if map_state_next[loc[0]][loc[1]] == Constants.DEAD:
-            #             reward = Constants.DEAD_ANT_REWARD
-            #             loc_dict[loc] = loc
-            ######################################################################################
             if map_state_next[next_target_loc[0]][next_target_loc[1]] == Constants.MY_ANT\
                     or map_state_next[next_target_loc[0]][next_target_loc[1]] == Constants.HILL:
+                # if loc == next_target_loc:
+                #     reward = 0
+                # else:
+                #     reward = -0.5
+                reward = 0
                 loc_dict[loc] = next_target_loc
-                # d = self.distance_to_food(next_target_loc)
-
                 if self.has_eat_food(next_target_loc):
-                    self.get_food_number += 1
                     reward = Constants.GET_FOOD_REWARD
-
-                else:
-                    reward = 0
             else:
                 if map_state_next[next_target_loc[0]][next_target_loc[1]] == Constants.DEAD:
-                    self.get_food_number = 0
                     reward = Constants.DEAD_ANT_REWARD
                     loc_dict[loc] = next_target_loc
                 else:
                     if map_state_next[loc[0]][loc[1]] == Constants.MY_ANT:
-                        reward = 0
+                        reward = -0.5
                         loc_dict[loc] = loc
                     if map_state_next[loc[0]][loc[1]] == Constants.DEAD:
-                        self.get_food_number = 0
                         reward = Constants.DEAD_ANT_REWARD
                         loc_dict[loc] = loc
+            ######################################################################################
+            # if map_state_next[next_target_loc[0]][next_target_loc[1]] == Constants.MY_ANT\
+            #         or map_state_next[next_target_loc[0]][next_target_loc[1]] == Constants.HILL:
+            #     loc_dict[loc] = next_target_loc
+            #     # d = self.distance_to_food(next_target_loc)
+            #
+            #     if self.has_eat_food(next_target_loc):
+            #         self.get_food_number += 1
+            #         reward = Constants.GET_FOOD_REWARD
+            #     else:
+            #         reward = 0
+            # else:
+            #     if map_state_next[next_target_loc[0]][next_target_loc[1]] == Constants.DEAD:
+            #         self.get_food_number = 0
+            #         reward = Constants.DEAD_ANT_REWARD
+            #         loc_dict[loc] = next_target_loc
+            #     else:
+            #         if map_state_next[loc[0]][loc[1]] == Constants.MY_ANT:
+            #             reward = 0
+            #             loc_dict[loc] = loc
+            #         if map_state_next[loc[0]][loc[1]] == Constants.DEAD:
+            #             self.get_food_number = 0
+            #             reward = Constants.DEAD_ANT_REWARD
+            #             loc_dict[loc] = loc
             ######################################################################################
             if reward == -100:
                 print("reward == -100!!!!  target " + str(map_state_next[next_target_loc[0]][next_target_loc[1]]) +
